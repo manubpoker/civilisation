@@ -25,7 +25,7 @@ export const STRUCTURES = [
     jobs: { administrator: 2, courtier: 3 }, unique: 'civ', center: 3, storage: 600, dropoff: true,
     fx: { culture: 2, order: 2, loyalty: 1 }, aura: { radius: 60, happy: 3, beliefs: { hierarchy: 0.05, authority: 0.03 } },
     style: { kind: 'palace', wall: '#e6d6b0', roof: '#6a2a8a' }, desc: 'Seat of the monarch. Projects authority, culture and loyalty.' }),
-  st({ id: 'capitol', name: 'Capitol', cat: 'civic', tech: 'democracy', size: [11, 9], cost: { marble: 80, bricks: 150, glass: 30, steel: 10, coins: 500 }, work: 7000, hp: 3500,
+  st({ id: 'capitol', name: 'Capitol', cat: 'civic', tech: 'democracy', size: [11, 9], cost: { marble: 80, bricks: 150, glass: 30, iron: 20, coins: 500 }, work: 7000, hp: 3500,
     jobs: { administrator: 3, politician: 4 }, unique: 'civ', center: 4, storage: 800, dropoff: true,
     fx: { order: 2, culture: 2, diplomacy: 1 }, aura: { radius: 70, happy: 4, beliefs: { authority: -0.05, hierarchy: -0.04 } },
     style: { kind: 'dome', wall: '#eeeeea', roof: '#b0b8c0' }, desc: 'Elected assembly. Reduces unrest and pushes liberty and equality.' }),
