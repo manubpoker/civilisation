@@ -181,7 +181,12 @@ export class Military {
       }
       const keep = Math.floor(soldiers.length * (0.2 + Math.max(0, -civ.beliefAvg[B.COURAGE]) / 300));
       const go = soldiers.slice(keep);
-      if (go.length < 5) continue;
+      // only march with a force that could plausibly take the town, and
+      // regroup for a while after a failed attack
+      const foe = sim.civs[target.civ];
+      const defenders = foe.soldiers * (target.isCapital ? 0.6 : 0.3) + target.adults * 0.05;
+      if (go.length < Math.max(6, defenders * 0.9)) continue;
+      if (sim.tick - (civ.lastRetreat || -1e9) < CFG.TICKS_PER_DAY * 3) continue;
       // rally at our town closest to the target
       let rally = cap, rd = 1e18;
       for (const tid of civ.towns) { const t = sim.towns[tid]; if (!t) continue; const d = (t.cx - target.cx) ** 2 + (t.cy - target.cy) ** 2; if (d < rd) { rd = d; rally = t; } }
@@ -207,6 +212,7 @@ export class Military {
       if (c) { a.tx = c.cx; a.ty = c.cy; }
       if (a.members.length < Math.max(3, a.initial * 0.3)) {
         a.state = 'retreat';
+        sim.civs[a.civ].lastRetreat = sim.tick;
         sim.chronicle(`The army of ${sim.civs[a.civ].name} retreats from ${target.name}.`, a.civ, 'war');
         for (const i of a.members) { P.state[i] = S.IDLE; }
         this.armies.splice(k, 1);
@@ -412,7 +418,9 @@ export class Military {
     // a people besieged in its last town capitulates rather than perish,
     // unless a ruthless conqueror faces only a remnant
     const ruthless = newCiv.beliefAvg[B.MERCY] < -30 && oldCiv.pop < 150;
-    if (oldCiv.towns.length <= 1 && !ruthless) { this.capitulate(oldCiv, newCiv, pr, town); return; }
+    const remaining = oldCiv.pop - town.pop;
+    const decisive = oldCiv.towns.length <= 1 || remaining < 60 || (wasCapital && remaining < oldCiv.pop * 0.35);
+    if (decisive && !ruthless) { this.capitulate(oldCiv, newCiv, pr, town); return; }
     pr.captures = pr.captures || {};
     pr.captures[byCiv] = (pr.captures[byCiv] || 0) + 1;
     sim.chronicle(`🏰 ${newCiv.name} captures ${town.name} from ${oldCiv.name}!`, byCiv, 'conquest');
