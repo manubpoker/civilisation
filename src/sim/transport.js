@@ -479,6 +479,8 @@ export class Transport {
             if (!o.alive || (o.id !== civ.id && !sim.diplomacy.tradeAllowed(civ.id, o.id))) continue;
             for (const tid of o.towns) { const t = sim.towns[tid]; if (!t) continue; for (const id of t.buildings) { const b = sim.buildings[id]; if (b && b.built && b.def.airport && b !== a) dests.push(b); } }
           }
+          // without a second airport, aircraft land on airfields at our larger towns
+          if (!dests.length) for (const tid of civ.towns) { const t = sim.towns[tid]; const c = t && sim.buildings[t.center]; if (c && t.pop > 400 && t.id !== a.town) dests.push(c); }
           if (!dests.length) continue;
           const d = dests[randInt(dests.length)];
           const home = sim.towns[a.town];
