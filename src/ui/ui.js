@@ -327,7 +327,8 @@ export class UI {
     sun.style.background = sim.tod > 0.25 && sim.tod < 0.8 ? 'var(--brass-2)' : '#cfd8e6';
     if (nowMs - this.lastPanel < 600) return;
     this.lastPanel = nowMs;
-    $('#totpop').textContent = `${fmt(sim.people.count)} people`;
+    const pace = this.pace || 0;
+    $('#totpop').textContent = `${fmt(sim.people.count)} people${pace > 0.004 ? ` · ${pace >= 1 ? pace.toFixed(1) + ' yr/s' : Math.round(pace * 12 * 10) / 10 + ' days/s'}` : ''}`;
     for (const b of document.querySelectorAll('#speeds button')) b.setAttribute('aria-pressed', +b.dataset.speed === this.ctl.speed);
     this.renderLedger();
     this.renderTab(false);

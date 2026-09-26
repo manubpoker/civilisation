@@ -59,6 +59,7 @@ export class Sim {
       return (p.mil ? p.mil.speed : 1) * (p.speed || 1);
     });
     this.speedCache = new Float32Array(this.people.cap);
+    this.bestDist = new Float32Array(this.people.cap).fill(1e9);
     this.wallMap = new Uint8Array(this.world.N);
     this.wallBuildings = new Set();
     this.renderDirtyBuildings = [];

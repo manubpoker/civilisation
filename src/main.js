@@ -72,7 +72,11 @@ function start(seedOverride) {
     ui.update(now);
     if ((frames & 63) === 0) ui.layout();
     frames++;
-    if (now - fpsT > 1000) { window.__fps = frames; frames = 0; fpsT = now; }
+    if (now - fpsT > 1000) {
+      window.__fps = frames; frames = 0;
+      ui.pace = (sim.tick - (ui.lastTick || sim.tick)) / ((now - fpsT) / 1000) / 5760;
+      ui.lastTick = sim.tick; fpsT = now;
+    }
     requestAnimationFrame(frame);
   }
   const boot = document.getElementById('boot'); if (boot) boot.remove();

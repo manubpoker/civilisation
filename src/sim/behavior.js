@@ -143,7 +143,8 @@ export function think(sim, i) {
   if (P.army[i] >= 0) { sim.military.armyThink(i); return; }
   if (prof.kind === 'thief') { thiefThink(sim, i, town); return; }
   // the starving look after themselves first
-  if (P.food[i] < 25 && town.feedRatio < 0.9 && sim.season !== 3 && !prof.mil && chance(0.6)) { forageThink(sim, i, town); return; }
+  const feeds = prof.kind === 'field' || prof.kind === 'harvest' || prof.kind === 'hunt';
+  if (P.food[i] < 25 && town.feedRatio < 0.9 && sim.season !== 3 && !prof.mil && !(feeds && P.work[i] >= 0) && chance(0.6)) { forageThink(sim, i, town); return; }
   if (workHours(sim, i)) { workThink(sim, i, town, prof); return; }
   leisureThink(sim, i, town);
 }
@@ -563,6 +564,9 @@ function finishField(sim, i) {
   let y = f.rate * (f.animals ? 0.8 + wb.fert * 0.4 : wb.fert) * seasonF * civ.mod.farm * (0.85 + P.skill[i] * 0.004);
   if (f.warm) y *= Math.max(0.15, Math.min(1.2, (sim.world.temp[(wb.y | 0) * sim.world.W + (wb.x | 0)] - 0.3) * 2.5));
   if (town.stock[RES_TOOLS] > 0.5) { y *= 1.2; town.take(RES_TOOLS, 0.004); }
+  // a hungry farmer eats a little of the harvest on the spot
+  const fv = RESOURCES[R(f.out)].food;
+  if (fv > 0 && P.food[i] < 40) { const eat = Math.min(y, 1.5); y -= eat; P.food[i] += eat * fv * 25; }
   town.add(R(f.out), y);
   if (f.extra) for (const [k, v] of Object.entries(f.extra)) town.add(R(k), v * seasonF * (0.5 + wb.fert * 0.5) * 0.8);
   if (f.horses && civ.flags.horses && chance(f.horses)) town.add(R('horses'), 1);

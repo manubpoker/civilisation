@@ -9,7 +9,18 @@ export function goTo(sim, i, x, y, act) {
   const P = sim.people;
   const w = sim.world;
   x = Math.max(1, Math.min(w.W - 2, x)); y = Math.max(1, Math.min(w.H - 2, y));
+  // goals in water or on peaks move to the nearest walkable pixel
+  if (w.speedAt(x, y) === 0) {
+    let bx = -1, by = -1, bd = 1e9;
+    for (let oy = -6; oy <= 6; oy++) for (let ox = -6; ox <= 6; ox++) {
+      const d = ox * ox + oy * oy;
+      if (d < bd && w.speedAt(x + ox, y + oy) > 0) { bd = d; bx = x + ox; by = y + oy; }
+    }
+    if (bx < 0) { P.state[i] = S.WAIT; P.timer[i] = 30; P.act[i] = A.NONE; P.path[i] = null; return false; }
+    x = (bx | 0) + 0.5; y = (by | 0) + 0.5;
+  }
   P.gx[i] = x; P.gy[i] = y;
+  sim.bestDist[i] = 1e9;
   P.act[i] = act;
   P.state[i] = S.MOVE;
   P.stuck[i] = 0;
@@ -74,6 +85,18 @@ export function moveStep(sim, i, dt) {
   let x = P.x[i], y = P.y[i];
   let dx = tx - x, dy = ty - y;
   let d = Math.sqrt(dx * dx + dy * dy);
+  // progress watchdog: circling without getting closer ends the trip
+  const gd = Math.abs(P.gx[i] - x) + Math.abs(P.gy[i] - y);
+  if (gd < sim.bestDist[i] - 0.75) { sim.bestDist[i] = gd; P.stuck[i] = 0; }
+  else {
+    P.stuck[i] += dt;
+    if (P.stuck[i] > 160) {
+      P.stuck[i] = 0;
+      if (gd < 12) { trackPixel(sim, i); return true; }         // close enough: arrived
+      P.path[i] = null; P.state[i] = S.WAIT; P.timer[i] = 20; P.act[i] = A.NONE;
+      return false;
+    }
+  }
   const here = w.speedAt(x, y);
   const step = personSpeedCached(sim, i) * dt * (here > 0.15 ? here : 0.15);
   if (d <= step) {
@@ -104,14 +127,7 @@ export function moveStep(sim, i, dt) {
       else if (w.speedAt(x - px * la, y - py * la) > 0) { ux = -px; uy = -py; best = 1; }
     }
   }
-  if (best === 0) {
-    P.stuck[i] += dt;
-    if (P.stuck[i] > 120) {
-      // give up and hop to the waypoint (rare; avoids permanent jams)
-      P.x[i] = tx; P.y[i] = ty; P.stuck[i] = 0;
-    }
-    return false;
-  }
+  if (best === 0) return false;
   const nx = x + ux * step, ny = y + uy * step;
   if (sim.military.anyWar) {
     const np = (ny | 0) * w.W + (nx | 0);
