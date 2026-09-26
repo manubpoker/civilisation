@@ -205,6 +205,7 @@ export const STRUCTURES = [
       { in: { lumber: 3 }, out: { furniture: 3 }, time: 90 },
       { in: { meat: 2, salt: 1 }, out: { preserved_food: 4 }, time: 80 },
       { in: { fish: 2, salt: 1 }, out: { preserved_food: 4 }, time: 80 },
+      { in: { iron: 4, tools: 2 }, out: { machinery: 1 }, time: 180 },
       { in: { steel: 3 }, out: { machinery: 1 }, time: 140, tech: 'steel' }],
     style: { kind: 'factory', wall: '#8a4a3a', roof: '#4a4a4a' }, desc: 'Mass-produces clothing, tools, furniture, canned food and machinery.' }),
   st({ id: 'electronics_plant', name: 'Electronics Plant', cat: 'industry', tech: 'electronics', size: [8, 6], cost: { steel: 60, concrete: 60, machinery: 6 }, work: 4000, hp: 2400,

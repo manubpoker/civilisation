@@ -41,11 +41,51 @@ export class Settle {
       if (!site) continue;
       this.launch(civ, src, site);
     }
+    if (sim.day % CFG.DAYS_PER_SEASON === 0) for (const civ of sim.civs) if (civ.alive) this.resettle(civ);
     // parties that never arrive dissolve
     for (let k = this.parties.length - 1; k >= 0; k--) {
       const p = this.parties[k];
       if (sim.tick - p.started > CFG.TICKS_PER_DAY * 6) { this.found(p, true); }
     }
+  }
+
+  // Families leave an overgrown town for a small, well-fed colony of the same people.
+  resettle(civ) {
+    const sim = this.sim, P = sim.people;
+    let big = null;
+    for (const tid of civ.towns) { const t = sim.towns[tid]; if (t && (!big || t.pop > big.pop)) big = t; }
+    if (!big || big.pop < 400) return;
+    let dest = null, bs = 0;
+    for (const tid of civ.towns) {
+      const t = sim.towns[tid];
+      if (!t || t === big || t.pop > big.pop / 5 || t.feedRatio < 0.95 || t.foodDays < 3) continue;
+      if (!sim.nav.sameLandmass(big.cx, big.cy, t.cx, t.cy)) continue;
+      const sc = (big.pop / 5 - t.pop) + t.foodDays;
+      if (sc > bs) { bs = sc; dest = t; }
+    }
+    if (!dest) return;
+    const want = Math.min(40, Math.max(8, Math.round(big.pop * 0.02)));
+    let moved = 0;
+    const list = big.residentsList;
+    const start = randInt(Math.max(1, list.length));
+    for (let k = 0; k < list.length && moved < want; k++) {
+      const i = list[(start + k) % list.length];
+      if (P.civ[i] !== civ.id || P.age[i] < CFG.ADULT_AGE || P.age[i] > 45 || P.army[i] >= 0) continue;
+      if (P.work[i] >= 0 && sim.professions[P.prof[i]].cat === 'government') continue;
+      // the family moves together
+      const fam = [i];
+      const mate = P.partner[i];
+      if (mate >= 0 && P.civ[mate] === civ.id && P.town[mate] === big.id && P.army[mate] < 0) fam.push(mate);
+      for (const j of list) if (fam.length < 6 && P.town[j] === big.id && P.age[j] < CFG.ADULT_AGE && (P.mother[j] === i || P.mother[j] === mate)) fam.push(j);
+      const c = sim.buildings[dest.center];
+      const [x, y] = c ? [c.cx, c.cy] : [dest.cx, dest.cy];
+      for (const j of fam) {
+        sim.transferTown(j, dest);
+        goTo(sim, j, x + (rand() - 0.5) * 14, y + (rand() - 0.5) * 14, A.WANDER);
+      }
+      moved += fam.length;
+    }
+    if (moved >= 12 && chance(0.35)) sim.chronicle(`${moved} settlers leave crowded ${big.name} for ${dest.name}.`, civ.id, 'expansion');
   }
 
   findSite(civ, src) {

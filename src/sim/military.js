@@ -44,6 +44,10 @@ export class Military {
   }
 
   militarySlots(civ) {
+    // cached per civ for the current tick (the planner and labour market ask often)
+    const c = this.slotCache || (this.slotCache = new Map());
+    const hit = c.get(civ.id);
+    if (hit && hit.tick === this.sim.tick) return hit.n;
     let n = 0;
     for (const tid of civ.towns) {
       const t = this.sim.towns[tid];
@@ -51,9 +55,10 @@ export class Military {
       for (const id of t.buildings) {
         const b = this.sim.buildings[id];
         if (!b) continue;
-        for (const [k, v] of Object.entries(b.def.jobs)) if (k[0] === '@') n += v;
+        n += b.def.milSlots !== undefined ? b.def.milSlots : (b.def.milSlots = Object.entries(b.def.jobs).reduce((a, [k, v]) => a + (k[0] === '@' ? v : 0), 0));
       }
     }
+    c.set(civ.id, { tick: this.sim.tick, n });
     return n;
   }
 
@@ -243,7 +248,7 @@ export class Military {
       if (st === S.FIGHT || st === S.INSIDE || st === S.JAIL || st === S.SLEEP && !PROFESSIONS[P.prof[i]].mil) continue;
       const p = PROFESSIONS[P.prof[i]];
       const combatant = !!p.mil && p.kind !== 'hunter' && p.kind !== 'thief';
-      if (!combatant && ((i + sim.tick) & 3)) continue; // civilians check less often
+      if (!combatant && ((i + sim.tick) & 7)) continue; // civilians check less often
       const R0 = combatant ? (p.mil.cav ? 34 : 26) : 12;
       let best = -1, bd = 1e9;
       const honorable = sim.civs[c].beliefAvg[B.HONOR] > 20;

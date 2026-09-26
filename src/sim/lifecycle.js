@@ -131,7 +131,9 @@ export class Lifecycle {
         const kids = P.flags[i] >> 5; // small counter stored in high bits
         const housing = town.housingCap > town.pop ? 1 : 0.35;
         const fam = 1 + P.b(i, B.FAMILY) * 0.007;
-        const p = 0.03 * civ.mod.birth * fam * town.feedRatio * housing * (0.5 + P.happy[i] / 100) / (1 + kids * 0.35);
+        // families hold back when the granaries are thin
+        const reserve = Math.min(1, 0.3 + town.foodDays / 10);
+        const p = 0.03 * civ.mod.birth * fam * town.feedRatio * reserve * housing * (0.5 + P.happy[i] / 100) / (1 + kids * 0.35);
         if (chance(p)) P.preg[i] = 9;
       }
     }

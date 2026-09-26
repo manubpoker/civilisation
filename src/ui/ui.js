@@ -534,7 +534,8 @@ export class UI {
       if (!p.war && sim.tick < p.truceUntil) chips.push('<span class="chip">Truce</span>');
       html += `<div style="margin:6px 0 10px"><div><span style="color:${a.css}">${esc(a.name)}</span> <span class="muted">&amp;</span> <span style="color:${b.css}">${esc(b.name)}</span></div>
         <div class="chips">${chips.join('') || '<span class="chip">Neutral</span>'}</div>
-        <div class="muted" style="font-size:12px;margin-top:4px">Trade volume ${fmt(p.tradeVolume)} · grudge ${p.grudge.toFixed(0)} · casualties ${p.casualties[0]} / ${p.casualties[1]} · border tension ${sim.borderTension(p.a, p.b).toFixed(2)}</div></div>`;
+        <div class="muted" style="font-size:12px;margin-top:4px">Trade volume ${fmt(p.tradeVolume)} · grudge ${p.grudge.toFixed(0)} · casualties ${p.casualties[0]} / ${p.casualties[1]} · border tension ${sim.borderTension(p.a, p.b).toFixed(2)}</div>
+        ${p.why ? `<div class="why">${Object.entries(p.why).filter(([k, v]) => k !== 'target' && Math.abs(v) >= 0.5).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).map(([k, v]) => `<span class="${v > 0 ? 'up' : 'down'}">${k} ${v > 0 ? '+' : ''}${v.toFixed(0)}</span>`).join('')}<span class="tgt">→ drifting toward ${p.why.target.toFixed(0)}</span></div>` : ''}</div>`;
     }
     html += '<h3>Military</h3><table class="data"><thead><tr><th>Civilisation</th><th class="n">Soldiers</th><th class="n">Power</th><th class="n">Weariness</th><th class="n">Armies</th></tr></thead><tbody>' +
       civs.map((c) => `<tr><td style="color:${c.css}">${esc(c.name)}</td><td class="n">${c.soldiers}</td><td class="n">${fmt(c.milPower || 0)}</td><td class="n">${c.warWeariness.toFixed(0)}</td><td class="n">${sim.military.armies.filter((a) => a.civ === c.id).length}</td></tr>`).join('') + '</tbody></table>';

@@ -27,18 +27,21 @@ export class BeliefSystem {
       if (P.civ[i] < 0 || P.state[i] === 9) continue;
       this.socialise(i);
     }
-    // 2. building auras
-    for (const b of sim.buildings) {
+    // 2. building auras (a rotating third of buildings per pass, three times as strong)
+    this.auraPhase = ((this.auraPhase || 0) + 1) % 3;
+    const bl = sim.buildings;
+    for (let id = this.auraPhase; id < bl.length; id += 3) {
+      const b = bl[id];
       if (!b || !b.built || !b.def.aura || !b.def.aura.beliefs) continue;
       if (b.def.jobs && b.def.jobCount && !b.workers.length && !b.def.passive) continue;
       const aura = b.def.aura;
       const staff = b.def.jobCount ? 0.5 + b.workers.length / b.def.jobCount : 1;
-      const entries = Object.entries(aura.beliefs);
+      const entries = aura.entries || (aura.entries = Object.entries(aura.beliefs).map(([k, v]) => [B[k.toUpperCase()], v]));
       let cnt = 0;
       sim.spatial.query(b.cx, b.cy, aura.radius, (j) => {
         if (P.civ[j] !== b.civ) return false;
         if (chance(0.5)) return false;
-        for (const [k, v] of entries) P.persuade(j, B[k.toUpperCase()], v * 3 * staff);
+        for (const [sc, v] of entries) P.persuade(j, sc, v * 9 * staff);
         return ++cnt > 120;
       });
     }

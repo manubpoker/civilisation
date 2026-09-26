@@ -25,6 +25,11 @@ while (sim.tick < endTick) {
     lastLog = sim.year;
     const parts = sim.civs.map((c) => `${c.name.split(' ')[0]}: pop ${c.pop} towns ${c.towns.length} techs ${c.techCount} bld ${c.structCount.reduce((a, b) => a + b, 0)} sold ${c.soldiers} happy ${c.happiness.toFixed(0)} food ${sim.civFoodDays(c).toFixed(0)}d res ${c.researchRate.toFixed(1)}/d`);
     console.log(`Y${sim.year} | ${parts.join(' | ')} | ${((Date.now() - t1) / steps).toFixed(2)}ms/step`);
+    if (sim.year % 10 === 0 && sim.civs.length > 1) {
+      const [a, b] = sim.civs;
+      const p = sim.diplomacy.pair(a.id, b.id);
+      console.log(`   rel ${a.relations[b.id].toFixed(0)}/${b.relations[a.id].toFixed(0)} contact ${!!a.contact[b.id]} simil ${sim.diplomacy.similarity(a, b).toFixed(2)} border ${sim.borderTension(a.id, b.id).toFixed(2)} war ${p.war} treaties ${['trade', 'nonAggression', 'openBorders', 'alliance'].filter((k) => p[k]).join(',')}`);
+    }
     if (process.env.TOWNS) for (const t of sim.towns) {
       if (!t || !t.alive) continue;
       const food = ['berries', 'grain', 'meat', 'fish', 'bread'].map((r) => r + ':' + t.stock[sim.economy.constructor.name ? RES[r] : 0].toFixed(0) + '/' + t.prod[RES[r]].toFixed(1)).join(' ');

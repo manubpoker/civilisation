@@ -986,6 +986,7 @@ export class Sim {
     for (const civ of this.civs) {
       if (!civ.alive) continue;
       this.research.daily(civ);
+      if (civ.martyrs) civ.martyrs *= 0.97;
       civ.culture += civ.cultureToday * civ.mod.culture; civ.cultureRate = civ.cultureRate * 0.8 + civ.cultureToday * 0.2; civ.cultureToday = 0;
       civ.faith += civ.faithToday * civ.mod.faith; civ.faithRate = civ.faithRate * 0.8 + civ.faithToday * 0.2; civ.faithToday = 0;
       // passive culture from structures

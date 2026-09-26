@@ -40,13 +40,29 @@ export class Transport {
       if (!t) continue;
       for (const id of t.buildings) { const b = sim.buildings[id]; if (b && b.built && b.def.station) { stations.push({ t, b }); break; } }
     }
+    // network connectivity over existing lines (a spanning network, not every pair)
+    const mine = this.lines.filter((l) => l.civ === civ.id);
+    const linked = (ta, tb) => {
+      const seen = new Set([ta]), q = [ta];
+      while (q.length) {
+        const t = q.pop();
+        if (t === tb) return true;
+        for (const l of mine) {
+          const o = l.a === t ? l.b : l.b === t ? l.a : -1;
+          if (o >= 0 && !seen.has(o)) { seen.add(o); q.push(o); }
+        }
+      }
+      return false;
+    };
+    const degree = (tid) => mine.reduce((n, l) => n + (l.a === tid || l.b === tid ? 1 : 0), 0);
     for (let x = 0; x < stations.length; x++) {
-      // connect each station to its nearest neighbour not yet linked
+      // connect each station to its nearest neighbour not yet reachable by rail
       let best = null, bd = 1e18;
+      if (degree(stations[x].t.id) >= 3) continue;
       for (let y = 0; y < stations.length; y++) {
         if (x === y) continue;
         const a = stations[x], b = stations[y];
-        if (this.lines.some((l) => (l.a === a.t.id && l.b === b.t.id) || (l.a === b.t.id && l.b === a.t.id))) continue;
+        if (linked(a.t.id, b.t.id)) continue;
         const d = (a.b.cx - b.b.cx) ** 2 + (a.b.cy - b.b.cy) ** 2;
         if (d < bd) { bd = d; best = b; }
       }
@@ -57,6 +73,7 @@ export class Transport {
       const line = { id: this.nextId++, civ: civ.id, a: a.t.id, b: best.t.id, path, laid: 0, active: false, queue: [] };
       for (const p of path) if (sim.world.road[p] & RAIL) line.laid++;
       this.lines.push(line);
+      mine.push(line);
       sim.chronicle(`${civ.name} begins a railway between ${a.t.name} and ${best.t.name}.`, civ.id, 'transport');
     }
   }
@@ -422,6 +439,11 @@ export class Transport {
   // Daily: spawn ships at docks, flights at airports, plan railways and roads.
   daily() {
     const sim = this.sim;
+    // lines whose termini were lost or abandoned fall out of service (the track remains)
+    this.lines = this.lines.filter((l) => {
+      const a = sim.towns[l.a], b = sim.towns[l.b];
+      return a && b && a.alive && b.alive && a.civ === l.civ && b.civ === l.civ;
+    });
     for (const civ of sim.civs) {
       if (!civ.alive) continue;
       if (civ.flags.rail && sim.day % 3 === 0) this.planLines(civ);

@@ -232,3 +232,8 @@ table.data tr.zero td { color: var(--text-3); }
   #mobilebar button { flex: 1; }
   .ctl label { display: none; }
 }
+
+.why { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; font: 11px/1.4 var(--f-mono); }
+.why .up { color: var(--good); }
+.why .down { color: var(--bad); }
+.why .tgt { color: var(--text-3); }

@@ -831,7 +831,7 @@ export function arrive(sim, i) {
       const town = b ? sim.towns[b.town] : townOf(sim, i);
       if (town && P.carryAmt[i] > 0) {
         if (town.civ === P.civ[i]) town.add(P.carryRes[i], P.carryAmt[i]);
-        else townOf(sim, i).add(P.carryRes[i], P.carryAmt[i]);
+        else { const h = townOf(sim, i); if (h) h.add(P.carryRes[i], P.carryAmt[i]); }
       }
       P.carryAmt[i] = 0;
       P.state[i] = S.IDLE;
@@ -970,6 +970,7 @@ function startWork(sim, i) {
   P.state[i] = S.WORK;
   if (prof.kind === 'craft' && b.def.recipes) {
     const town = sim.towns[b.town];
+    if (!town) { P.state[i] = S.IDLE; return; }
     const ri = pickRecipe(sim, b, town, P.civ[i]);
     if (ri < 0) { P.state[i] = S.WAIT; P.timer[i] = 90; P.act[i] = A.NONE; b.stalled = (b.stalled || 0) + 1; return; }
     b.stalled = Math.max(0, (b.stalled || 0) - 2);

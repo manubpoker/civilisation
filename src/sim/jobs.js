@@ -72,7 +72,10 @@ export class Jobs {
       case 'guard': pr = 1 + Math.min(3, town.crime * 0.2); break;
       case 'porter': pr = 0.9 + Math.min(3, town.shipments.length * 0.5); break;
       case 'trader': case 'diplomat': case 'spy': case 'missionary':
-        pr = sim.diplomacy.anyContact(civ.id) ? 1.3 : 0; break;
+        pr = sim.diplomacy.anyContact(civ.id) ? 1.3 : 0;
+        // a church that keeps losing missionaries sends fewer
+        if (p.kind === 'missionary') pr /= 1 + (civ.martyrs || 0) * 0.15;
+        break;
       case 'scout': pr = civ.exploredCount < CFG.NW * CFG.NH * 0.5 ? 1.5 : 0.4; break;
       case 'teacher': pr = 1.2 + town.children * 0.02; break;
       case 'healer': pr = 1.2 + town.sick * 0.1; break;
@@ -86,6 +89,18 @@ export class Jobs {
     return pr;
   }
 
+  equippableUnit(civ, town, p) {
+    const can = (u) => { for (const [res, n] of Object.entries(u.equip || {})) if (town.stock[R(res)] < n) return false; return true; };
+    if (can(p)) return p.idx;
+    let best = -1, tier = -1;
+    for (const u of PROFESSIONS) {
+      if (u.kind !== 'military' || u.branch !== p.branch || (u.tier || 0) >= (p.tier || 0)) continue;
+      if ((u.tech && !civ.has(u.tech)) || civ.bans.has(u.id) || !can(u)) continue;
+      if ((u.tier || 0) > tier) { tier = u.tier || 0; best = u.idx; }
+    }
+    return best;
+  }
+
   assignTown(town) {
     const sim = this.sim, P = sim.people;
     const civ = sim.civs[town.civ];
@@ -96,11 +111,15 @@ export class Jobs {
       if (!b || !b.built) continue;
       if (b.banned) { if (b.workers.length) for (const w of [...b.workers]) this.setProf(w, P_LABORER, -1); continue; }
       for (const [pid, n] of b.slotList) {
+        // military slots are filled by any unit of the branch (older units
+        // serve when the newest can't be equipped)
+        const br = PROFESSIONS[pid].kind === 'military' ? PROFESSIONS[pid].branch : null;
+        const fits = (w) => P.prof[w] === pid || (br && PROFESSIONS[P.prof[w]].branch === br);
         let have = 0;
-        for (const w of b.workers) if (P.prof[w] === pid) have++;
+        for (const w of b.workers) if (fits(w)) have++;
         if (have > n) {
           // over-staffed (e.g. slots shrank)
-          for (const w of [...b.workers]) if (P.prof[w] === pid && have > n) { this.setProf(w, P_LABORER, -1); have--; }
+          for (const w of [...b.workers]) if (fits(w) && have > n) { this.setProf(w, P_LABORER, -1); have--; }
         }
         if (have < n) {
           const pr = this.priority(town, civ, b, pid);
@@ -165,16 +184,16 @@ export class Jobs {
         }
         if (best < 0) break;
         const i = cands[best];
-        // soldiers need equipment
-        if (isMil && p.equip) {
-          let ok = true;
-          for (const [res, n] of Object.entries(p.equip)) if (town.stock[R(res)] < n) { ok = false; break; }
-          if (!ok) break;
-          for (const [res, n] of Object.entries(p.equip)) town.take(R(res), n);
-        }
         // pacifists refuse to fight unless conscripted by an authoritarian state
         if (isMil && P.b(i, B.AGGRESSION) < -50 && civ.beliefAvg[B.AUTHORITY] < 30 && chance(0.7)) { cands.splice(best, 1); continue; }
-        this.setProf(i, s.pid, s.b.id);
+        // soldiers need equipment; fall back to the best unit we can equip
+        let pid = s.pid;
+        if (isMil) {
+          pid = this.equippableUnit(civ, town, p);
+          if (pid < 0) break;
+          for (const [res, n] of Object.entries(PROFESSIONS[pid].equip || {})) town.take(R(res), n);
+        }
+        this.setProf(i, pid, s.b.id);
         cands[best] = cands[cands.length - 1]; cands.pop();
         assigned++;
       }

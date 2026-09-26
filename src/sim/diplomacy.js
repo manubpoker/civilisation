@@ -71,7 +71,17 @@ export class Diplomacy {
     this.sim.civs[victim].relations[culprit] = Math.max(-100, civ.relations[culprit] - severity * grudgeMul);
     this.sim.civs[culprit].relations[victim] = Math.max(-100, this.sim.civs[culprit].relations[victim] - severity * 0.3);
     p.grudge += severity * 0.5 * grudgeMul;
-    if (text) this.sim.chronicle(text, victim, 'incident');
+    if (text) {
+      // repeated incidents of one kind are summarised rather than listed
+      const key = victim + ':' + culprit + ':' + text.slice(0, 14);
+      this.lastIncident = this.lastIncident || new Map();
+      const last = this.lastIncident.get(key);
+      const now = this.sim.tick;
+      if (last && now - last.tick < CFG.TICKS_PER_DAY * 9) { last.n++; return; }
+      const extra = last && last.n ? ` (${last.n + 1} such incidents lately)` : '';
+      this.lastIncident.set(key, { tick: now, n: 0 });
+      this.sim.chronicle(text + extra, victim, 'incident');
+    }
   }
 
   goodwill(c, amt) {
@@ -96,6 +106,10 @@ export class Diplomacy {
       target += (p.trade ? 6 : 0) + (p.alliance ? 12 : 0) + (p.openBorders ? 4 : 0);
       target += (a.mod.diplomacy + b.mod.diplomacy - 2) * 12;
       if (p.war) target -= 30;
+      // what drives the relationship, for the spectator
+      p.why = { beliefs: simil * 35, religion: -religion * 15, borders: -border * (0.6 + aggr) * 25, openness: xeno * 25,
+        commerce: Math.min(20, p.tradeVolume * 0.01) + (p.trade ? 6 : 0), grudge: -p.grudge, pacts: (p.alliance ? 12 : 0) + (p.openBorders ? 4 : 0),
+        statecraft: (a.mod.diplomacy + b.mod.diplomacy - 2) * 12, war: p.war ? -30 : 0, target };
       for (const [c, o] of [[a, b], [b, a]]) {
         c.relations[o.id] += (target - c.relations[o.id]) * 0.03;
         c.relations[o.id] = Math.max(-100, Math.min(100, c.relations[o.id]));
@@ -352,8 +366,9 @@ export class Diplomacy {
     });
     me.stats.converted += conv;
     const civ2 = sim.civs[P.target[i]];
-    if (civ2 && civ2.beliefAvg[B.ZEAL] > 30 && chance(0.25)) {
-      this.incident(civ2.id, me.id, 4, `Zealots of ${civ2.name} expel a missionary of ${me.name}.`);
+    if (civ2 && civ2.beliefAvg[B.ZEAL] > 30 && chance(0.15)) {
+      this.incident(civ2.id, me.id, 2, `Zealots of ${civ2.name} expel a missionary of ${me.name}.`);
+      me.martyrs = (me.martyrs || 0) + 1;
       sim.kill(i, 'martyred abroad');
       return;
     }
