@@ -246,7 +246,10 @@ export class Military {
         });
         let att = 0;
         sim.spatial.query(a.tx, a.ty, 22, (j) => { if (P.civ[j] === a.civ && P.army[j] === a.id) att++; return false; });
-        if (att >= 5 && def === 0) { a.occupy = (a.occupy || 0) + 1; if (a.occupy > 6) this.captureTown(target, a.civ); }
+        // a long siege ends when the garrison is overwhelmed or the town starves
+        a.siegeTime = (a.siegeTime || 0) + 120;
+        const worn = a.siegeTime > CFG.TICKS_PER_DAY * 2 && (def < att * 0.4 || target.foodDays < 1);
+        if (att >= 5 && (def === 0 || worn)) { a.occupy = (a.occupy || 0) + 1; if (a.occupy > 6) this.captureTown(target, a.civ); }
         else a.occupy = 0;
       }
     }
