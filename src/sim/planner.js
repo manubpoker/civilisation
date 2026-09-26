@@ -436,7 +436,7 @@ export class Planner {
       if (def.field && (def.field.out === RESOURCES[r].id || (def.field.extra && def.field.extra[RESOURCES[r].id] !== undefined))) { ok = true; break; }
       if (def.harvest && def.harvest.dep) {
         const types = depositTypesForHarvest(def, civ).filter((d) => sim.depRes[d] === r);
-        if (types.length && sim.findDepositCells(town.cx, town.cy, 140, types, civ, 1).length) { ok = true; break; }
+        if (types.length && sim.findDepositCells(town.cx, town.cy, this.reach(town, civ), types, civ, 1).length) { ok = true; break; }
       }
       if (def.harvest && def.harvest.animals && (r === R('meat') || r === R('hides'))) { ok = true; break; }
       if (depth < 1 && def.recipes) for (const rc of def.recipes) {
@@ -449,8 +449,14 @@ export class Planner {
     return ok;
   }
 
+  // How far a town will go for raw materials: bigger towns and better
+  // transport open quarries, pits and mines farther afield.
+  reach(town, civ) {
+    return 130 + Math.min(160, Math.sqrt(town.pop) * 3) + (civ.has('the_wheel') ? 10 : 0) + (civ.has('railroad') ? 40 : 0);
+  }
+
   hasNearbyDeposit(town, civ, types, def) {
-    const cells = this.sim.findDepositCells(town.cx, town.cy, 130, types, civ, 1);
+    const cells = this.sim.findDepositCells(town.cx, town.cy, this.reach(town, civ), types, civ, 1);
     return cells.length > 0;
   }
 
@@ -500,7 +506,7 @@ export class Planner {
     if (place === 'deposit') {
       const types = depositTypesForHarvest(def, civ).length ? depositTypesForHarvest(def, civ) : (def.deposit || []);
       const wanted = this.wantedDeposits(town, civ, types);
-      const cells = sim.findDepositCells(cx, cy, 140, wanted.length ? wanted : types, civ, 6);
+      const cells = sim.findDepositCells(cx, cy, this.reach(town, civ), wanted.length ? wanted : types, civ, 6);
       for (const cell of cells) {
         const [px, py] = sim.nav.cellCenter(cell);
         for (let k = 0; k < 10; k++) tryPos(px + (rand() - 0.5) * 16, py + (rand() - 0.5) * 16, 0);
@@ -508,7 +514,7 @@ export class Planner {
       return best;
     }
     if (place === 'forest') {
-      const cells = sim.findDepositCells(cx, cy, 90, [D.TREE], civ, 8);
+      const cells = sim.findDepositCells(cx, cy, 90 + Math.min(110, Math.sqrt(town.pop) * 2), [D.TREE], civ, 8);
       for (const cell of cells) {
         const [px, py] = sim.nav.cellCenter(cell);
         for (let k = 0; k < 6; k++) tryPos(px + (rand() - 0.5) * 20, py + (rand() - 0.5) * 20);

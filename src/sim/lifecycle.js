@@ -143,7 +143,7 @@ export class Lifecycle {
     P.loyalty[i] += ((P.happy[i] + pat * 0.3 + 15) * civ.mod.loyalty - P.loyalty[i]) * 0.06;
     if (P.loyalty[i] < 22 && P.b(i, B.XENOPHILIA) > 10 && chance(0.02 * civ.mod.immigration * 0.5 + 0.005)) this.emigrate(i, civ, town);
     else if (P.food[i] < 15 && town.feedRatio < 0.6 && chance(0.04)) this.flee(i, civ, town);
-    else if (P.work[i] < 0 && P.home[i] < 0 && chance(0.03 + Math.max(0, P.b(i, B.MOBILITY)) * 0.001)) this.internalMigrate(i, civ, town);
+    else if (P.work[i] < 0 && adult && (P.home[i] < 0 || town.idle > town.adults * 0.2) && chance(0.03 + Math.max(0, P.b(i, B.MOBILITY)) * 0.001)) this.internalMigrate(i, civ, town);
   }
 
   happiness(i, civ, town, adult) {
@@ -267,7 +267,8 @@ export class Lifecycle {
       const t = sim.towns[tid];
       if (!t || t === town || !t.alive) continue;
       const room = t.housingCap - t.pop;
-      const sc = room + (t.foodDays - town.foodDays) * 0.5;
+      // room to live, food to eat and work to do
+      const sc = room + (t.foodDays - town.foodDays) * 0.5 + Math.min(20, t.openJobs) - t.idle * 0.5;
       if (sc > bs) { bs = sc; best = t; }
     }
     if (!best || bs < 5) return;

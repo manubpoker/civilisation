@@ -234,9 +234,10 @@ export class Sim {
   depleteDeposit(p) {
     const w = this.world;
     const d = w.dep[p];
-    if (d === D.BERRY || d === D.FISH || d === D.HERBS || d === D.SPICE || d === D.COTTON) {
+    if (d === D.BERRY || d === D.FISH || d === D.HERBS || d === D.SPICE || d === D.COTTON || d === D.CLAY) {
+      // renewables come back; floods lay fresh clay along the rivers each year
       w.amt[p] = 0; w.markDirty(p);
-      this.regrowQueue.push(p, this.day + (d === D.FISH ? 3 : d === D.BERRY ? 4 : 6));
+      this.regrowQueue.push(p, this.day + (d === D.FISH ? 3 : d === D.BERRY ? 4 : d === D.CLAY ? 12 : 6));
       return;
     }
     const c = ((((p / w.W) | 0) / CFG.NAV) | 0) * CFG.NW + (((p % w.W) / CFG.NAV) | 0);
