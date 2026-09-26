@@ -115,9 +115,8 @@ export class Planner {
         // blocking the most valuable projects become bottlenecks to fix
         for (const [k, n] of Object.entries(def.cost)) {
           const r = R(k);
-          if (town.stock[r] >= n) continue;
           planWants.set(r, Math.max(planWants.get(r) || 0, n * 1.2));
-          blockers[r] += Math.min(3, c.v) / 3;
+          if (town.stock[r] < n) blockers[r] += Math.min(3, c.v) / 3;
         }
         continue;
       }

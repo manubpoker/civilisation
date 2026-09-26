@@ -102,14 +102,23 @@ export class Diplomacy {
       const border = sim.borderTension(a.id, b.id);
       const aggr = (a.beliefAvg[B.AGGRESSION] + b.beliefAvg[B.AGGRESSION]) / 200;
       const xeno = (a.beliefAvg[B.XENOPHILIA] + b.beliefAvg[B.XENOPHILIA]) / 200;
-      let target = simil * 35 - religion * 15 - border * (0.6 + aggr) * 25 + xeno * 25 + Math.min(20, p.tradeVolume * 0.01) - p.grudge;
-      target += (p.trade ? 6 : 0) + (p.alliance ? 12 : 0) + (p.openBorders ? 4 : 0);
-      target += (a.mod.diplomacy + b.mod.diplomacy - 2) * 12;
-      if (p.war) target -= 30;
-      // what drives the relationship, for the spectator
-      p.why = { beliefs: simil * 35, religion: -religion * 15, borders: -border * (0.6 + aggr) * 25, openness: xeno * 25,
-        commerce: Math.min(20, p.tradeVolume * 0.01) + (p.trade ? 6 : 0), grudge: -p.grudge, pacts: (p.alliance ? 12 : 0) + (p.openBorders ? 4 : 0),
-        statecraft: (a.mod.diplomacy + b.mod.diplomacy - 2) * 12, war: p.war ? -30 : 0, target };
+      // what drives the relationship (also shown to the spectator)
+      const bigA = a.pop > 800, bigB = b.pop > 800;
+      p.why = {
+        beliefs: (simil - 0.5) * 50,
+        religion: -religion * 15,
+        borders: -border * (0.6 + Math.max(-0.4, aggr)) * 25,
+        rivalry: bigA && bigB && border > 0.5 ? -8 - Math.max(0, a.beliefAvg[B.EXPANSION] + b.beliefAvg[B.EXPANSION]) / 10 : 0,
+        openness: xeno * 20,
+        commerce: Math.min(15, p.tradeVolume * 0.01) + (p.trade ? 4 : 0),
+        pacts: (p.alliance ? 8 : 0) + (p.openBorders ? 3 : 0),
+        statecraft: Math.max(-15, Math.min(15, (a.mod.diplomacy + b.mod.diplomacy - 2) * 10)),
+        grudge: -p.grudge,
+        war: p.war ? -30 : 0,
+      };
+      let target = 0;
+      for (const k in p.why) target += p.why[k];
+      p.why.target = target;
       for (const [c, o] of [[a, b], [b, a]]) {
         c.relations[o.id] += (target - c.relations[o.id]) * 0.03;
         c.relations[o.id] = Math.max(-100, Math.min(100, c.relations[o.id]));

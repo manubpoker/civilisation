@@ -223,6 +223,8 @@ table.data tr.zero td { color: var(--text-3); }
 /* mobile drawers */
 #mobilebar { display: none; }
 @media (max-width: 900px) {
+  .almanac { white-space: normal; flex-wrap: wrap; row-gap: 2px; min-width: 0; }
+  .almanac .pop { flex-basis: 100%; padding-left: 32px; }
   .brand small { display: none; }
   #ledger, #dossier { display: none; }
   #ledger.open, #dossier.open { display: flex; left: 8px; right: 8px; width: auto; top: calc(var(--top) + 8px); bottom: calc(64px + env(safe-area-inset-bottom, 0px)); max-height: none; z-index: 25; }

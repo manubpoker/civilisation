@@ -74,7 +74,9 @@ export class Lifecycle {
     P.lux[i] *= 0.82;
     if (adult && chance(Math.max(0.05, desire) * civ.mod.consume * 0.6)) {
       const r = LUX_RES[randInt(LUX_RES.length)];
-      if (town.stock[r] > 0.2) { town.take(r, 0.15); P.lux[i] = Math.min(1, P.lux[i] + RESOURCES[r].lux * 0.5); }
+      // goods earmarked for planned construction are not for private enjoyment
+      const earmark = town.planWants ? town.planWants.get(r) || 0 : 0;
+      if (town.stock[r] > 0.2 + earmark) { town.take(r, 0.15); P.lux[i] = Math.min(1, P.lux[i] + RESOURCES[r].lux * 0.5); }
     }
     // clothing in winter in cold places
     if (sim.season === 3 && adult) {
