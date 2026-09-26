@@ -59,7 +59,7 @@ export const STRUCTURES = [
     style: { kind: 'block', wall: '#8a5a4a', roof: '#3a3030' }, desc: 'Cramped workers’ housing. Unhealthy but dense.' }),
   st({ id: 'apartment_block', name: 'Apartment Block', cat: 'housing', tech: 'steel', size: [7, 7], cost: { concrete: 60, steel: 20, glass: 10 }, work: 2200, hp: 2000, housing: 70, powerUse: 5,
     style: { kind: 'block', wall: '#c8c4bc', roof: '#6a6a70' }, desc: 'Modern concrete apartments with plumbing.' }),
-  st({ id: 'skyscraper', name: 'Skyscraper', cat: 'housing', tech: 'electronics', size: [8, 8], cost: { steel: 80, glass: 60, concrete: 80, electronics: 5 }, work: 4200, hp: 4000, housing: 160, powerUse: 20,
+  st({ id: 'skyscraper', name: 'Skyscraper', cat: 'housing', tech: 'electronics', size: [8, 8], cost: { steel: 50, glass: 30, concrete: 50, electronics: 2 }, work: 4200, hp: 4000, housing: 160, powerUse: 20,
     style: { kind: 'tower', wall: '#8ab0c8', roof: '#2a3a4a' }, desc: 'A glass tower housing a village vertically.' }),
   st({ id: 'arcology', name: 'Arcology', cat: 'housing', tech: 'arcology', size: [14, 14], cost: { steel: 300, glass: 200, electronics: 60, concrete: 300 }, work: 14000, hp: 12000, housing: 700, powerUse: 60,
     fx: { research: 1, culture: 2 }, aura: { radius: 40, happy: 4, health: 0.1 },
@@ -345,12 +345,12 @@ export const STRUCTURES = [
   st({ id: 'motor_depot', name: 'Motor Depot', cat: 'transport', tech: 'automobile', size: [6, 5], cost: { concrete: 50, steel: 30 }, work: 1800, hp: 1200,
     jobs: { driver: 5 }, dropoff: true, storage: 600,
     style: { kind: 'warehouse', wall: '#6a6a72', roof: '#e0b020' }, desc: 'Trucks move freight quickly along highways.' }),
-  st({ id: 'airport', name: 'Airport', cat: 'transport', tech: 'flight', size: [14, 8], cost: { concrete: 150, steel: 60, electronics: 10 }, work: 6000, hp: 3000,
+  st({ id: 'airport', name: 'Airport', cat: 'transport', tech: 'flight', size: [14, 8], cost: { concrete: 70, steel: 25, glass: 10 }, work: 6000, hp: 3000,
     jobs: { pilot: 4 }, maxPerTown: 1, airport: true, powerUse: 20,
     style: { kind: 'airport', wall: '#bab8b0', roof: '#4a4a52' }, desc: 'Aircraft fly passengers, diplomats and freight between cities.' }),
 
   // ----------------------------------------------------------- ADVANCED (3)
-  st({ id: 'research_institute', name: 'Research Institute', cat: 'knowledge', tech: 'computers', size: [7, 6], cost: { concrete: 100, glass: 40, electronics: 20 }, work: 5000, hp: 2400,
+  st({ id: 'research_institute', name: 'Research Institute', cat: 'knowledge', tech: 'computers', size: [7, 6], cost: { concrete: 60, glass: 20, electronics: 6 }, work: 5000, hp: 2400,
     jobs: { researcher: 4, programmer: 3 }, powerUse: 25, aura: { radius: 50, beliefs: { invention: 0.04, reason: 0.04, tradition: -0.03 } },
     style: { kind: 'block', wall: '#dde4ec', roof: '#2a5a8a' }, desc: 'Computers and researchers accelerate discovery.' }),
   st({ id: 'solar_farm', name: 'Solar Farm', cat: 'industry', tech: 'renewable_energy', size: [10, 8], cost: { glass: 60, electronics: 20, steel: 20 }, work: 2600, hp: 1000,

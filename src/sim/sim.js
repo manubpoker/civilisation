@@ -313,7 +313,7 @@ export class Sim {
         const p = py * w.W + px;
         if (types.includes(w.dep[p]) && w.amt[p] > 0) {
           const own = w.owner[w.terrIdx(px, py)];
-          if (own >= 0 && own !== b.civ) continue;
+          if (own >= 0 && own !== b.civ && !this.military.atWarBetween(own, b.civ)) continue;
           list.push(p, dd);
         }
       }
@@ -835,6 +835,17 @@ export class Sim {
         const v = (1 - d / rr) * strength;
         const k = y * TW + x;
         if (v > w.infl[k]) { w.infl[k] = v; w.owner[k] = t.civ; }
+      }
+    }
+    // every town keeps an inviolable core around its centre
+    for (const t of this.towns) {
+      if (!t || !t.alive) continue;
+      const rr = (t.radius * 0.7 + 12) / S_;
+      const cx = t.cx / S_, cy = t.cy / S_;
+      for (let y = Math.max(0, (cy - rr) | 0); y <= Math.min(TH - 1, (cy + rr) | 0); y++) for (let x = Math.max(0, (cx - rr) | 0); x <= Math.min(TW - 1, (cx + rr) | 0); x++) {
+        if (Math.hypot(x - cx, y - cy) > rr) continue;
+        const k = y * TW + x;
+        if (w.owner[k] !== t.civ) { w.owner[k] = t.civ; w.infl[k] = Math.max(w.infl[k], 0.5); }
       }
     }
     // forts and castles project control
