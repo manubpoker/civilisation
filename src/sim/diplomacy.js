@@ -70,7 +70,7 @@ export class Diplomacy {
     const grudgeMul = civ.mod.grudge;
     this.sim.civs[victim].relations[culprit] = Math.max(-100, civ.relations[culprit] - severity * grudgeMul);
     this.sim.civs[culprit].relations[victim] = Math.max(-100, this.sim.civs[culprit].relations[victim] - severity * 0.3);
-    p.grudge += severity * 0.5 * grudgeMul;
+    p.grudge = Math.min(60, p.grudge + severity * 0.5 * grudgeMul);
     if (text) {
       // repeated incidents of one kind are summarised rather than listed
       const key = victim + ':' + culprit + ':' + text.slice(0, 14);
@@ -152,6 +152,8 @@ export class Diplomacy {
       // a stronger army emboldens, but only so far
       let warDrive = -r * 0.8 + aggr * 0.6 + expans * 0.3 + p.grudge * 0.8 - me.beliefAvg[B.EMPATHY] * 0.1 + Math.min(40, (ratio - 1) * 30);
       if (p.nonAggression) warDrive -= 25 + Math.max(0, honest) * 0.3;
+      // the memory of the last war keeps swords sheathed for a decade or so
+      if (p.lastPeace) warDrive -= Math.max(0, 50 - (now - p.lastPeace) / CFG.TICKS_PER_YEAR * 5);
       if (p.alliance) warDrive -= 60;
       if (me.warWeariness > 20) warDrive -= me.warWeariness;
       if (!truce && !bannedWar && warDrive > 65 && r < -35 && ratio > 1.1 && me.soldiers > 8 && chance(0.25)) {
@@ -188,7 +190,7 @@ export class Diplomacy {
       const pacifism = -aggr;
       const caps = p.captures || {};
       // conquerors are sated by the towns they took; losers want the bleeding to stop
-      const peaceDrive = me.warWeariness * 1.2 + pacifism * 0.4 + forgive * 0.3 + dur * 6 + (1 - ratio) * 40 - p.grudge * 0.5 - me.beliefAvg[B.PRIDE] * 0.2
+      const peaceDrive = me.warWeariness * 1.2 + pacifism * 0.4 + forgive * 0.3 + dur * 8 + Math.max(-40, (1 - ratio) * 40) - Math.min(40, p.grudge * 0.5) - me.beliefAvg[B.PRIDE] * 0.2
         + (caps[me.id] || 0) * 28 + (caps[them.id] || 0) * 18;
       if (peaceDrive > 55 && chance(0.2)) {
         // the other side accepts if also weary or if the offer comes from the stronger side
@@ -219,6 +221,7 @@ export class Diplomacy {
   makePeace(me, them, p, ratio) {
     const sim = this.sim;
     p.war = false;
+    p.lastPeace = sim.tick;
     p.truceUntil = sim.tick + CFG.TICKS_PER_YEAR * 5;
     // a treaty resets the worst of the hatred; memories still linger
     p.grudge *= 0.4;
