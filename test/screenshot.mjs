@@ -33,7 +33,7 @@ for (let k = 0; k < shots; k++) {
   if (process.env.ACTIONS) await page.evaluate(process.env.ACTIONS.split('|')[k] || '0');
   await page.waitForTimeout(+(process.env.GAP || 2500));
   await page.screenshot({ path: path.join(root, `test/out/shot-${k}.png`) });
-  const info = await page.evaluate(() => window.__sim ? { year: __sim.year, pop: __sim.people.count, fps: window.__fps, towns: __sim.towns.length } : null);
+  const info = await page.evaluate(() => window.__sim ? { year: __sim.year, tick: __sim.tick, speed: window.__ui && __ui.ctl ? __ui.ctl.speed : null, pace: window.__ui ? __ui.pace : null, pop: __sim.people.count, fps: window.__fps, towns: __sim.towns.length } : null);
   console.log('shot', k, JSON.stringify(info));
 }
 console.log(errors.length ? errors.slice(0, 20).join('\n') : 'no console errors');

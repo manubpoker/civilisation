@@ -7,6 +7,7 @@ import { SCALES, NB, B } from '../data/beliefs.js';
 import { D, T, TERRAIN } from '../world/terrain.js';
 import { placeBuilding, canPlace, countDeposits, footprintFertility, shoreScore, depositTypesForHarvest } from './buildings.js';
 import { outputsOf } from './jobs.js';
+import { ANIMALS } from './animals.js';
 import { rand, randInt, chance } from '../util/rng.js';
 
 const RES_COINS = R('coins');
@@ -92,11 +93,24 @@ export class Planner {
     const planWants = town.planWants || new Map();
     for (const [r, n] of planWants) { if (n * 0.85 < 4) planWants.delete(r); else planWants.set(r, n * 0.85); }
     const blockers = new Float32Array(NRES);
+    // materials held back for great projects that are more than half funded
+    const reserved = new Float32Array(NRES);
+    let reservations = 0;
     let placed = 0, siteTries = 0;
     const chosen = new Set();
     for (const c of cands) {
       const def = c.def;
-      if (!town.has(def.cost)) {
+      let affordable = true, have = 0, need = 0;
+      for (const k in def.cost) {
+        const r = R(k), n = def.cost[k];
+        if (town.stock[r] - reserved[r] < n) affordable = false;
+        have += Math.min(n, Math.max(0, town.stock[r] - reserved[r])); need += n;
+      }
+      if (!affordable) {
+        if (reservations < 2 && c.v >= 2.5 && need >= 60 && have >= need * 0.5) {
+          for (const k in def.cost) reserved[R(k)] += def.cost[k];
+          reservations++;
+        }
         // remember what we need so producers/logistics react; the materials
         // blocking the most valuable projects become bottlenecks to fix
         for (const [k, n] of Object.entries(def.cost)) {
@@ -394,6 +408,11 @@ export class Planner {
       const caution = Math.max(0, -civ.beliefAvg[B.COURAGE]) + Math.max(0, civ.beliefAvg[B.SUSPICION]);
       const ring = this.wallRingNeeded(town, def);
       v = ring > 0 && town.pop > 80 && threat >= 0.5 ? (threat * 1.5 + caution / 50) : 0;
+      // early stockades keep out wolves, or simply reassure a wary people
+      if (def.id === 'palisade' && ring > 0 && town.pop > 60 && !v) {
+        const wolves = sim.animals.nearest(town.cx, town.cy, 110, (k) => ANIMALS[sim.animals.type[k]].predator) >= 0;
+        if (wolves || caution > 25) v = 0.7 + caution / 60;
+      }
       if (def.id === 'palisade' && civ.has('fortification')) v = 0;
     } else if (def.id === 'watchtower') {
       v = (threat + 0.3 + Math.max(0, civ.beliefAvg[B.SUSPICION]) / 50) / (1 + n * 0.6);

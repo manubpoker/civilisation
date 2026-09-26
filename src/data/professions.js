@@ -131,7 +131,7 @@ const COUNTER_INF = {
   sailor: { sea: 0.1, adventure: 0.05 }, scout: { adventure: 0.1, curiosity: 0.05 }, doctor: { mortality: -0.1 },
   general: { aggression: 0.1, discipline: 0.05 }, diplomat: { xenophilia: 0.1 }, propagandist: { patriotism: 0.15, authority: 0.1 },
   politician: { ambition: 0.1 }, broker: { ambition: 0.1, charity: -0.05 }, actor: { hedonism: 0.05 },
-  monk: { pride: -0.1 }, nurse: { aggression: -0.05, empathy: 0.05 }, musician: { discipline: -0.05 }, farmer: { curiosity: -0.02 },
+  monk: { pride: -0.1 }, nurse: { aggression: -0.03, empathy: 0.05 }, musician: { discipline: -0.05 }, farmer: { curiosity: -0.02 },
 };
 
 export const PROF_INDEX = {};

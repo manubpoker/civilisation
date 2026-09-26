@@ -121,6 +121,7 @@ export function completeBuilding(sim, b, instant = false) {
     } else if (!old || !old.built || old === b) { town.center = b.id; town.level = def.center; }
   }
   if (def.unique === 'civ') sim.civs[b.civ].uniques[def.id] = b.id;
+  if (sim.everBuilt) sim.everBuilt.add(def.id);
   sim.renderDirtyBuildings.push(b.id);
   if (!instant && sim.onBuildingComplete) sim.onBuildingComplete(b);
 }
