@@ -280,7 +280,7 @@ export class Military {
         if (cj < 0 || cj === c || !this.atWarBetween(c, cj) || P.state[j] === S.INSIDE) return false;
         const pj = PROFESSIONS[P.prof[j]];
         const jCombat = !!pj.mil && pj.kind !== 'hunter' && pj.kind !== 'thief' || P.state[j] === S.FIGHT;
-        if (!jCombat && (!ruthless || !combatant)) return false;
+        if (!jCombat && (!ruthless || !combatant || rand() < 0.75)) return false;
         const d = (P.x[j] - P.x[i]) ** 2 + (P.y[j] - P.y[i]) ** 2 - (jCombat ? 200 : 0);
         if (d < bd) { bd = d; best = j; }
         return false;
@@ -292,8 +292,11 @@ export class Military {
         P.state[i] = S.FIGHT; P.target[i] = best; P.path[i] = null;
       } else {
         // civilians: the brave fight back, the rest flee
+        // only the very brave take up arms, and only to defend their own town
         const brave = P.b(i, B.COURAGE) + sim.civs[c].mod.morale * 10 - 10;
-        if (brave > 40 && P.age[i] >= CFG.ADULT_AGE) { P.state[i] = S.FIGHT; P.target[i] = best; P.path[i] = null; }
+        const home = sim.towns[P.town[i]];
+        const atHome = home && Math.hypot(P.x[i] - home.cx, P.y[i] - home.cy) < home.radius * 0.8;
+        if (brave > 60 && atHome && P.age[i] >= CFG.ADULT_AGE && P.health[i] > 50) { P.state[i] = S.FIGHT; P.target[i] = best; P.path[i] = null; }
         else {
           const dx = P.x[i] - P.x[best], dy = P.y[i] - P.y[best];
           const l = Math.hypot(dx, dy) || 1;
