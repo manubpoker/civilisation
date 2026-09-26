@@ -409,6 +409,10 @@ export class Military {
     if (!oldCiv || !newCiv || town.civ === byCiv) return;
     const wasCapital = oldCiv.capital === town.id;
     const pr = sim.diplomacy.pair(byCiv, oldCiv.id);
+    // a people besieged in its last town capitulates rather than perish,
+    // unless a ruthless conqueror faces only a remnant
+    const ruthless = newCiv.beliefAvg[B.MERCY] < -30 && oldCiv.pop < 150;
+    if (oldCiv.towns.length <= 1 && !ruthless) { this.capitulate(oldCiv, newCiv, pr, town); return; }
     pr.captures = pr.captures || {};
     pr.captures[byCiv] = (pr.captures[byCiv] || 0) + 1;
     sim.chronicle(`🏰 ${newCiv.name} captures ${town.name} from ${oldCiv.name}!`, byCiv, 'conquest');
@@ -449,6 +453,28 @@ export class Military {
     sim.beliefs.shock(oldCiv.id, B.PATRIOTISM, 4, 0.4);
     if (wasCapital) sim.relocateCapital(oldCiv);
     if (!oldCiv.towns.length) sim.eliminateCiv(oldCiv, newCiv);
+  }
+
+  capitulate(loser, winner, pr, town) {
+    const sim = this.sim;
+    const wcap = sim.towns[winner.capital];
+    // tribute: half the treasury and a share of the stores
+    let paid = 0;
+    if (wcap) {
+      for (let r = 0; r < town.stock.length; r++) {
+        const amt = town.stock[r] * (r === sim.RES_COINS ? 0.5 : 0.2);
+        if (amt > 0.5) { town.take(r, amt); wcap.add(r, amt); if (r === sim.RES_COINS) paid = amt; }
+      }
+    }
+    sim.chronicle(`🏳 ${loser.name}, besieged in ${town.name}, capitulates to ${winner.name} and pays ${Math.round(paid)} coins with a fifth of its stores.`, winner.id, 'conquest');
+    pr.captures = pr.captures || {};
+    pr.captures[winner.id] = (pr.captures[winner.id] || 0) + 1;
+    sim.diplomacy.makePeace(winner, loser, pr, 1);
+    pr.truceUntil = sim.tick + CFG.TICKS_PER_YEAR * 8;
+    pr.grudge += 25;
+    loser.warWeariness += 20;
+    sim.beliefs.shock(loser.id, B.PATRIOTISM, 5, 0.5);
+    sim.beliefs.shock(loser.id, B.FORGIVENESS, -5, 0.4);
   }
 
   disband(a, b) {
