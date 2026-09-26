@@ -142,6 +142,8 @@ export function think(sim, i) {
   // military/diplomatic/army roles act regardless of the work day
   if (P.army[i] >= 0) { sim.military.armyThink(i); return; }
   if (prof.kind === 'thief') { thiefThink(sim, i, town); return; }
+  // the starving look after themselves first
+  if (P.food[i] < 25 && town.feedRatio < 0.9 && sim.season !== 3 && !prof.mil && chance(0.6)) { forageThink(sim, i, town); return; }
   if (workHours(sim, i)) { workThink(sim, i, town, prof); return; }
   leisureThink(sim, i, town);
 }
@@ -553,7 +555,7 @@ function finishField(sim, i) {
   const P = sim.people;
   const wb = bld(sim, P.target[i]);
   const town = townOf(sim, i);
-  if (!wb || !town) return;
+  if (!wb || !town || !wb.def.field) return; // field gone (ids are recycled)
   const civ = sim.civs[P.civ[i]];
   const f = wb.def.field;
   const seasonF = [0.55, 1.0, 1.7, f.animals ? 0.5 : 0][sim.season] * (sim.weatherFarm || 1);
@@ -1019,8 +1021,8 @@ function finishWork(sim, i) {
   P.skill[i] = Math.min(100, P.skill[i] + 0.3);
   if (prof.kind === 'craft' && P.target2[i] >= 0 && b.def.recipes && town) {
     const rc = b.def.recipes[P.target2[i]];
-    let ok = true;
-    for (const [res, n] of Object.entries(rc.in)) if (town.stock[R(res)] < n) { ok = false; break; }
+    let ok = !!rc;
+    if (ok) for (const [res, n] of Object.entries(rc.in)) if (town.stock[R(res)] < n) { ok = false; break; }
     if (ok) {
       for (const [res, n] of Object.entries(rc.in)) town.take(R(res), n);
       const mult = civ.mod.craft * (b.def.cat === 'industry' ? civ.mod.industry : 1) * skillF * (b.def.powerUse ? 0.5 + 0.5 * town.powerRatio : 1);

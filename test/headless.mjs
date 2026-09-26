@@ -44,7 +44,7 @@ for (const c of sim.civs) {
   console.log(' stats:', JSON.stringify(c.stats));
 }
 // coverage report
-const everS = new Set(), everP = new Set();
+const everS = new Set(sim.everBuilt), everP = new Set([...sim.everProf].map((k) => PROFESSIONS[k].id));
 for (const b of sim.buildings) if (b) everS.add(b.def.id);
 for (const c of sim.civs) { STRUCTURES.forEach((s, k) => { if (c.structCount[k] > 0) everS.add(s.id); }); PROFESSIONS.forEach((p, k) => { if (c.profCount[k] > 0) everP.add(p.id); }); }
 console.log(`\nstructures seen ${everS.size}/100; missing: ${STRUCTURES.filter((s) => !everS.has(s.id)).map((s) => s.id).join(' ')}`);

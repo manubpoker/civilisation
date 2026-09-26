@@ -15,7 +15,10 @@ export function goTo(sim, i, x, y, act) {
   P.stuck[i] = 0;
   P.pathIdx[i] = 0;
   const dx = x - P.x[i], dy = y - P.y[i];
-  if (dx * dx + dy * dy < 22 * 22) { P.path[i] = null; return true; }
+  const d2 = dx * dx + dy * dy;
+  if (d2 < 22 * 22) { P.path[i] = null; return true; }
+  // short trips with a clear straight line need no pathfinding
+  if (d2 < 100 * 100 && lineClear(sim, P.x[i], P.y[i], x, y)) { P.path[i] = null; return true; }
   const p = sim.nav.findPath(P.x[i], P.y[i], x, y, false);
   if (p === undefined) { P.path[i] = PENDING; return true; }
   if (p === null) {
@@ -26,6 +29,17 @@ export function goTo(sim, i, x, y, act) {
   }
   P.path[i] = p;
   P.pathIdx[i] = p.length > 1 ? 1 : 0;
+  return true;
+}
+
+function lineClear(sim, x0, y0, x1, y1) {
+  const nav = sim.nav;
+  const d = Math.hypot(x1 - x0, y1 - y0);
+  const n = Math.ceil(d / 5);
+  for (let k = 1; k < n; k++) {
+    const t = k / n;
+    if (nav.cost[nav.cellOf(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)] >= 1e9) return false;
+  }
   return true;
 }
 

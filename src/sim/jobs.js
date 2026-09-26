@@ -25,6 +25,7 @@ export class Jobs {
     if (civ) { civ.profCount[P.prof[i]]--; civ.profCount[pid]++; }
     P.prof[i] = pid;
     P.work[i] = bid;
+    sim.everProf.add(pid);
     if (bid >= 0) sim.buildings[bid].workers.push(i);
     P.skill[i] *= 0.4;
     P.color[i] = 0;
@@ -94,8 +95,7 @@ export class Jobs {
       const b = sim.buildings[id];
       if (!b || !b.built) continue;
       if (b.banned) { if (b.workers.length) for (const w of [...b.workers]) this.setProf(w, P_LABORER, -1); continue; }
-      for (const [pidS, n] of Object.entries(b.slots)) {
-        const pid = +pidS;
+      for (const [pid, n] of b.slotList) {
         let have = 0;
         for (const w of b.workers) if (P.prof[w] === pid) have++;
         if (have > n) {
@@ -119,18 +119,25 @@ export class Jobs {
       if (P.prof[i] === P_THIEF) continue;
       if (P.work[i] < 0) cands.push(i);
     }
-    // reallocation under pressure: pull low-priority workers into urgent slots
-    const urgent = slots[0].pr > 4;
-    if (urgent && cands.length < 3) {
+    // reallocation: when valuable slots stay empty, workers leave the least
+    // useful jobs (urgent needs pull harder and faster)
+    const top = slots[0].pr;
+    if (cands.length < 3 && top > 1.5) {
+      const urgent = top > 4;
+      const famine = town.feedRatio < 0.75;
+      const limit = famine ? 18 : urgent ? 6 : 2;
+      const thresh = top * (urgent ? 0.3 : 0.45);
       let pulled = 0;
-      for (const i of town.residentsList) {
-        if (pulled > 4) break;
+      const list = town.residentsList;
+      const start = (rand() * list.length) | 0;
+      for (let k = 0; k < list.length && pulled < limit; k++) {
+        const i = list[(start + k) % list.length];
         const w = P.work[i];
-        if (w < 0 || P.army[i] >= 0) continue;
+        if (w < 0 || P.army[i] >= 0 || P.civ[i] !== town.civ) continue;
         const b = sim.buildings[w];
-        if (!b) continue;
+        if (!b || PROFESSIONS[P.prof[i]].mil) continue;
         const cur = this.priority(town, civ, b, P.prof[i]);
-        if (cur < slots[0].pr * 0.3 && !PROFESSIONS[P.prof[i]].mil) { this.setProf(i, P_LABORER, -1); cands.push(i); pulled++; }
+        if (cur < thresh) { this.setProf(i, P_LABORER, -1); cands.push(i); pulled++; }
       }
     }
     if (!cands.length) return;

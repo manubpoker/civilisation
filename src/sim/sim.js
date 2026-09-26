@@ -69,12 +69,14 @@ export class Sim {
     this.chronicleLog = [];
     this.shipByPerson = new Map();
     this.weatherFarm = 1;
-    this.researchCostMul = opts.researchCostMul || 3;
+    this.researchCostMul = opts.researchCostMul || 1;
     this.RES_COINS = R('coins');
     this.depRes = DEPOSITS.map((d) => (d.res ? R(d.res) : -1));
     this.territoryDirty = true;
     this.borders = new Float32Array(64);
     this.history = [];
+    this.everBuilt = new Set();
+    this.everProf = new Set();
     // subsystems
     this.jobs = new Jobs(this);
     this.lifecycle = new Lifecycle(this);
@@ -277,15 +279,19 @@ export class Sim {
 
   findDepositNear(x, y, r, types, nonzero) {
     const w = this.world;
-    const cells = this.findDepositCells(x, y, r, types, null, 5);
+    const cells = this.findDepositCells(x, y, r, types, null, 14);
     if (!cells.length) return -1;
-    const c = cells[randInt(Math.min(3, cells.length))];
-    const x0 = (c % CFG.NW) * CFG.NAV, y0 = ((c / CFG.NW) | 0) * CFG.NAV;
-    for (let t = 0; t < 40; t++) {
-      const px = x0 + randInt(CFG.NAV), py = y0 + randInt(CFG.NAV);
-      if (!w.inb(px, py)) continue;
-      const p = py * w.W + px;
-      if (types.includes(w.dep[p]) && (!nonzero || w.amt[p] > 0) && !w.bld[p]) return p;
+    // try cells from nearest outwards (with a little randomness) until one has ripe deposits
+    const start = randInt(Math.min(3, cells.length));
+    for (let k = 0; k < cells.length; k++) {
+      const c = cells[(start + k) % cells.length];
+      const x0 = (c % CFG.NW) * CFG.NAV, y0 = ((c / CFG.NW) | 0) * CFG.NAV;
+      for (let t = 0; t < 24; t++) {
+        const px = x0 + randInt(CFG.NAV), py = y0 + randInt(CFG.NAV);
+        if (!w.inb(px, py)) continue;
+        const p = py * w.W + px;
+        if (types.includes(w.dep[p]) && (!nonzero || w.amt[p] > 0) && !w.bld[p]) return p;
+      }
     }
     return -1;
   }
@@ -428,7 +434,7 @@ export class Sim {
     if (P.home[i] >= 0) { const b = this.buildings[P.home[i]]; if (b) { const k = b.residents.indexOf(i); if (k >= 0) b.residents.splice(k, 1); } }
     const pt = P.partner[i];
     if (pt >= 0 && P.partner[pt] === i) P.partner[pt] = -1;
-    if (P.flags[i] & 16) this.chronicle(`${this.personName(i)}, a celebrated figure of ${civ.name}, dies (${cause}) aged ${Math.floor(P.age[i])}.`, civ.id, 'death', -1);
+    if ((P.flags[i] & 16) && P.skill[i] >= 99) this.chronicle(`${this.personName(i)}, a celebrated figure of ${civ.name}, dies (${cause}) aged ${Math.floor(P.age[i])}.`, civ.id, 'death', -1);
     civ.stats.died++;
     civ.profCount[P.prof[i]]--;
     this.shipByPerson.delete(i);
@@ -480,7 +486,12 @@ export class Sim {
     if (!town || !town.alive) return;
     const from = this.civs[P.civ[i]], to = this.civs[town.civ];
     if (from === to) { this.transferTown(i, town); return; }
-    if (to.beliefAvg[B.HOSPITALITY] < -40 || this.military.atWarBetween(from.id, to.id)) return;
+    if (to.beliefAvg[B.HOSPITALITY] < -40 || this.military.atWarBetween(from.id, to.id)) {
+      // turned away at the border: go home
+      const home = this.nearestTownOfCiv(from.id, P.x[i], P.y[i]);
+      if (home) { this.transferTown(i, home); goTo(this, i, home.cx, home.cy, A.WANDER); }
+      return;
+    }
     this.jobs.leaveHome(i);
     this.changeCiv(i, to.id);
     this.transferTown(i, town);
@@ -625,6 +636,7 @@ export class Sim {
     else if (civ.structCount[b.type] === 0 && !['hut', 'farm', 'palisade', 'stone_wall'].includes(b.def.id)) this.chronicle(`${civ.name} builds its first ${b.def.name}${town ? ' in ' + town.name : ''}.`, civ.id, 'build');
     civ.structCount[b.type]++;
     civ.stats.built++;
+    this.everBuilt.add(b.def.id);
     if (b.def.center && b.def.center >= 2 && town) this.chronicle(`${town.name} raises a ${b.def.name}.`, civ.id, 'build');
   }
 
@@ -768,9 +780,16 @@ export class Sim {
           pdem += b.def.powerUse || 0;
           if (b.def.power && b.workers.length) { ppas += b.def.power; if (b.def.solar) solar = true; }
           poll += b.def.fx.pollution || 0;
-          let sl = 0;
-          for (const n of Object.values(b.slots)) sl += n;
-          open += Math.max(0, sl - b.workers.length);
+          // count unfilled civilian jobs only (soldier / envoy slots wait on policy, not labour)
+          if (b.slotTotal > b.workers.length) {
+            for (const [pid, n] of b.slotList) {
+              const k = PROFESSIONS[pid].kind;
+              if (k === 'military' || k === 'watchman' || k === 'trader' || k === 'diplomat' || k === 'spy' || k === 'missionary') continue;
+              let have = 0;
+              for (const w of b.workers) if (this.people.prof[w] === pid) have++;
+              open += Math.max(0, n - have);
+            }
+          }
         }
       }
       t.housingCap = hcap;

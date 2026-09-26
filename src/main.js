@@ -80,10 +80,18 @@ function start(seedOverride) {
 }
 
 // let the loading screen paint before the heavy world generation
-requestAnimationFrame(() => setTimeout(() => {
-  try { start(); } catch (err) {
-    console.error(err);
-    const m = document.getElementById('bootmsg');
-    if (m) m.textContent = 'The world failed to form: ' + err.message;
-  }
-}, 30));
+function boot(data) {
+  requestAnimationFrame(() => setTimeout(() => {
+    try {
+      start(data && data.seed ? data.seed : undefined);
+      if (data && data.cam && window.__renderer) Object.assign(window.__renderer.cam, data.cam);
+    } catch (err) {
+      console.error(err);
+      const m = document.getElementById('bootmsg');
+      if (m) m.textContent = 'The world failed to form: ' + err.message;
+    }
+  }, 30));
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.snapshot) hot.snapshot(() => ({ seed: window.__ui ? window.__ui.seed : undefined, cam: window.__renderer ? { ...window.__renderer.cam } : undefined }));
+if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});

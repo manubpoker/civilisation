@@ -68,10 +68,16 @@ export class Nav {
   // Called periodically: refresh dirty cells and drop stale cached paths.
   refresh(force = false) {
     if (!this.dirty.size && !force) return;
-    for (const c of this.dirty) this.computeCell(c);
+    // keep cached paths unless some cell's cost changed meaningfully
+    let significant = force;
+    for (const c of this.dirty) {
+      const old = this.cost[c];
+      this.computeCell(c);
+      const nw = this.cost[c];
+      if ((old >= INF) !== (nw >= INF) || Math.abs(nw - old) > old * 0.2) significant = true;
+    }
     this.dirty.clear();
-    this.cache.clear();
-    this.version++;
+    if (significant) { this.cache.clear(); this.version++; }
     if (force) this.computeComponents();
   }
 
@@ -165,7 +171,7 @@ export class Nav {
     this.stats.searches++;
     const NW = this.NW, NH = this.NH;
     const gx = g % NW, gy = (g / NW) | 0;
-    const hw = water ? 1 : 0.45;
+    const hw = water ? 1 : 0.85;
     const stamp = ++this.curStamp;
     const G = this.g, F = this.from, ST = this.stamp;
     const heap = this.heap; heap.clear();
@@ -209,7 +215,7 @@ export class Nav {
     const path = new Int32Array(len);
     let k = len - 1;
     for (let c = g; c !== -1; c = F[c]) path[k--] = c;
-    if (cache.size > 12000) cache.clear();
+    if (cache.size > 40000) cache.clear();
     cache.set(key, path);
     return path;
   }

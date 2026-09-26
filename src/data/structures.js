@@ -108,7 +108,7 @@ export const STRUCTURES = [
     jobs: { quarrier: 4 }, dropoff: ['stone', 'marble'], harvest: { dep: [D.STONE, D.MARBLE], radius: 22, amt: 4, time: 90 },
     style: { kind: 'quarry', wall: '#8a8680', roof: '#b0aca4' }, desc: 'Cuts stone and marble from outcrops.' }),
   st({ id: 'clay_pit', name: 'Clay Pit', cat: 'material', tech: 'pottery', size: [4, 4], cost: { wood: 8 }, work: 150, hp: 150, place: 'deposit', deposit: [D.CLAY],
-    jobs: { clay_digger: 2 }, maxPerTown: 2, dropoff: ['clay'], harvest: { dep: [D.CLAY], radius: 30, amt: 4, time: 70 },
+    jobs: { clay_digger: 3 }, maxPerTown: 3, dropoff: ['clay'], harvest: { dep: [D.CLAY], radius: 30, amt: 4, time: 70 },
     style: { kind: 'quarry', wall: '#8a5a40', roof: '#aa6e50' }, desc: 'Digs clay from riverbanks.' }),
   st({ id: 'mine', name: 'Mine', cat: 'material', tech: 'mining', size: [4, 4], cost: { wood: 25, tools: 2 }, work: 600, hp: 400, place: 'deposit',
     deposit: [D.COPPER, D.TIN, D.IRON, D.COAL, D.GOLD, D.SILVER, D.GEMS, D.SALT, D.SULFUR, D.URANIUM],

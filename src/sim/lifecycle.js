@@ -140,6 +140,7 @@ export class Lifecycle {
     const pat = P.b(i, B.PATRIOTISM);
     P.loyalty[i] += ((P.happy[i] + pat * 0.3 + 15) * civ.mod.loyalty - P.loyalty[i]) * 0.06;
     if (P.loyalty[i] < 22 && P.b(i, B.XENOPHILIA) > 10 && chance(0.02 * civ.mod.immigration * 0.5 + 0.005)) this.emigrate(i, civ, town);
+    else if (P.food[i] < 15 && town.feedRatio < 0.6 && chance(0.04)) this.flee(i, civ, town);
     else if (P.work[i] < 0 && P.home[i] < 0 && chance(0.03 + Math.max(0, P.b(i, B.MOBILITY)) * 0.001)) this.internalMigrate(i, civ, town);
   }
 
@@ -226,6 +227,32 @@ export class Lifecycle {
     if (P.work[i] >= 0) sim.jobs.setProf(i, P_LABORER, -1);
     goTo(sim, i, x + (rand() - 0.5) * 10, y + (rand() - 0.5) * 10, A.MIGRATE);
     P.target[i] = dest.id;
+  }
+
+  // Famine refugees head for a better-fed town: their own civ's first, else a neighbour's.
+  flee(i, civ, town) {
+    const sim = this.sim, P = sim.people;
+    let best = null, bs = 0.8;
+    for (const t of sim.towns) {
+      if (!t || !t.alive || t === town || t.feedRatio < 0.95 || t.foodDays < 6) continue;
+      if (t.civ !== civ.id) {
+        const other = sim.civs[t.civ];
+        if (!civ.contact[t.civ] || sim.military.atWarBetween(civ.id, t.civ) || other.beliefAvg[B.HOSPITALITY] < -35) continue;
+      }
+      const d = Math.hypot(t.cx - P.x[i], t.cy - P.y[i]);
+      const sc = (t.civ === civ.id ? 2 : 1) * t.foodDays / (1 + d / 100);
+      if (sc > bs) { bs = sc; best = t; }
+    }
+    if (!best) return;
+    if (P.work[i] >= 0) sim.jobs.setProf(i, P_LABORER, -1);
+    const c = sim.buildings[best.center];
+    const [x, y] = c ? [c.cx, c.cy] : [best.cx, best.cy];
+    goTo(sim, i, x + (rand() - 0.5) * 12, y + (rand() - 0.5) * 12, A.MIGRATE);
+    P.target[i] = best.id;
+    if (best.civ !== civ.id) {
+      civ.refugees = (civ.refugees || 0) + 1;
+      if (civ.refugees % 20 === 1) sim.chronicle(`Famine refugees flee ${town.name} for ${best.name} in the lands of ${sim.civs[best.civ].name}.`, civ.id, 'migration');
+    }
   }
 
   internalMigrate(i, civ, town) {

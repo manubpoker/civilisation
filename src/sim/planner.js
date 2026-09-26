@@ -67,6 +67,7 @@ export class Planner {
     const weights = this.aiWeights(civ);
     const cands = [];
     const counts = this.countTypes(town);
+    this.cacheTown(town);
     for (const def of STRUCTURES) {
       if (!civ.structureAvailable(def)) continue;
       if (def.unique === 'civ' && civ.uniques[def.id] !== undefined) continue;
@@ -74,6 +75,7 @@ export class Planner {
       if (def.maxPerTown && counts[def.idx] >= def.maxPerTown) continue;
       if (def.maxPerCiv && this.civCount(civ, def.idx) >= def.maxPerCiv) continue;
       if (def.center && def.center <= town.level) continue;
+      if (def.center && town.construction.some((id) => sim.buildings[id] && sim.buildings[id].def.center)) continue;
       if (def.center && def.unique === 'civ' && !town.isCapital) continue;
       if (def.center && def.center > 2 && !town.isCapital) continue;
       let v = this.value(def, town, civ, counts);
@@ -152,6 +154,7 @@ export class Planner {
   }
 
   anyStalled(town, typeIdx) {
+    if (this.cache && this.cache.town === town.id && this.cache.tick === this.sim.tick) return this.cache.stalled[typeIdx] === 1;
     for (const id of town.buildings) {
       const b = this.sim.buildings[id];
       if (b && b.type === typeIdx && b.built && (b.stalled || 0) > 1) return true;
@@ -165,15 +168,25 @@ export class Planner {
     return n;
   }
 
+  cacheTown(town) {
+    const open = new Int32Array(STRUCTURES.length), stalled = new Uint8Array(STRUCTURES.length);
+    for (const id of town.buildings) {
+      const b = this.sim.buildings[id];
+      if (!b) continue;
+      if (!b.built) open[b.type] += b.def.jobCount;
+      else { open[b.type] += Math.max(0, b.slotTotal - b.workers.length); if ((b.stalled || 0) > 1) stalled[b.type] = 1; }
+    }
+    this.cache = { town: town.id, tick: this.sim.tick, open, stalled };
+  }
+
   openSlots(town, typeIdx) {
+    if (this.cache && this.cache.town === town.id && this.cache.tick === this.sim.tick) return this.cache.open[typeIdx];
     let open = 0;
     for (const id of town.buildings) {
       const b = this.sim.buildings[id];
       if (!b || b.type !== typeIdx) continue;
       if (!b.built) { open += b.def.jobCount; continue; }
-      let slots = 0;
-      for (const n of Object.values(b.slots)) slots += n;
-      open += Math.max(0, slots - b.workers.length);
+      open += Math.max(0, b.slotTotal - b.workers.length);
     }
     return open;
   }
@@ -209,6 +222,11 @@ export class Planner {
     }
     // --- town centre upgrades
     if (def.center) return def.center > town.level ? 6 + pop / 50 : 0;
+    if (def.plant) {
+      const trees = sim.findDepositCells(town.cx, town.cy, 70, [D.TREE], null, 30).length;
+      const want = town.want[R('wood')] > town.stock[R('wood')];
+      return (trees < 12 && want ? 1.5 : 0.1) + Math.max(0, civ.beliefAvg[B.NATURE]) / 40 - n * 0.8;
+    }
     // --- producers
     const outs = outputsOf(def);
     if (outs.length && def.jobCount) {
@@ -216,7 +234,8 @@ export class Planner {
       if (this.openSlots(town, def.idx) > 0) return 0;
       if (n > 0 && def.recipes && this.anyStalled(town, def.idx)) return 0;
       const feeds = outs.some((r) => RESOURCES[r].food > 0.5);
-      if (town.idle < 2 && town.openJobs > 4 && !(feeds && town.foodDays < 12)) return 0;
+      // only refuse new workplaces under a genuine labour shortage
+      if (town.idle < 2 && town.openJobs > Math.max(8, town.adults * 0.12) && !(feeds && town.foodDays < 12)) return 0;
     }
     if (outs.length) {
       let best = 0;

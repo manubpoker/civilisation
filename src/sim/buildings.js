@@ -24,6 +24,8 @@ export class Building {
     this.workers = [];
     this.residents = [];
     this.slots = {};         // profession idx -> count
+    this.slotList = [];
+    this.slotTotal = 0;
     this.active = true;
     this.banned = false;
     this.fire = 0;
@@ -63,6 +65,8 @@ export function resolveJobs(sim, b) {
     slots[pid] = (slots[pid] || 0) + n;
   }
   b.slots = slots;
+  b.slotList = Object.entries(slots).map(([k, v]) => [+k, v]);
+  b.slotTotal = b.slotList.reduce((a, x) => a + x[1], 0);
 }
 
 export function placeBuilding(sim, typeIdx, civId, townId, x, y, built = false, rotate = false) {

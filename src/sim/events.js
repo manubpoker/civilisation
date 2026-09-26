@@ -41,8 +41,8 @@ export class Events {
     // weather
     if (sim.day % CFG.DAYS_PER_SEASON === 0) {
       const r = rand();
-      if (r < 0.08) { sim.weatherFarm = 0.45; sim.chronicle('Drought withers the crops across the continent.', -1, 'disaster'); }
-      else if (r < 0.18) { sim.weatherFarm = 1.35; sim.chronicle('A bountiful season: harvests overflow.', -1, 'good'); }
+      if (r < 0.035) { sim.weatherFarm = 0.45; sim.chronicle('Drought withers the crops across the continent.', -1, 'disaster'); }
+      else if (r < 0.1) { sim.weatherFarm = 1.35; sim.chronicle('A bountiful season: harvests overflow.', -1, 'good'); }
       else sim.weatherFarm = 1;
     }
     // earthquakes

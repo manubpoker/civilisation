@@ -8,3 +8,4 @@ console.log('pop', sim.people.count, 'buildings', sim.buildings.filter(Boolean).
 const t0 = performance.now();
 for (let k = 0; k < 1500; k++) sim.step(4);
 console.log('ms/step', ((performance.now() - t0) / 1500).toFixed(3));
+console.log('nav stats', JSON.stringify(sim.nav.stats), 'cache', sim.nav.cache.size);

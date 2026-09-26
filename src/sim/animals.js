@@ -66,7 +66,11 @@ export class Animals {
   }
   update(sim, dt) {
     const w = sim.world;
-    for (let i = 0; i < this.hwm; i++) {
+    // staggered: each animal is updated every 4th step with a 4x time step
+    this.phase = ((this.phase || 0) + 1) & 3;
+    const ph = this.phase;
+    dt *= 4;
+    for (let i = ph; i < this.hwm; i += 4) {
       if (!this.alive[i]) continue;
       const def = ANIMALS[this.type[i]];
       this.timer[i] -= dt;

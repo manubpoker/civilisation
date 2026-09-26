@@ -788,7 +788,7 @@ export class UI {
       const unlocksS = STRUCTURES.filter((s) => s.tech === t.id);
       const unlocksP = PROFESSIONS.filter((p) => p.tech === t.id);
       const leadsTo = TECHS.filter((x) => x.req.includes(t.id));
-      this.modal(t.name, `<p class="muted">${esc(ERAS[t.era])} · base cost ${Math.round(t.cost * sim.researchCostMul)} research</p><p>${esc(t.desc || '')}</p>
+      this.modal(t.name, `<p class="muted">${esc(ERAS[t.era])} · costs about ${Math.round(sim.research.cost(sim.civs[0], t))} research points</p><p>${esc(t.desc || '')}</p>
         ${t.req.length ? `<h3>Requires</h3><div class="chips">${t.req.map((r) => `<button class="chip link" data-ency="tech:${r}">${esc(TECHS.find((x) => x.id === r).name)}</button>`).join('')}</div>` : ''}
         ${t.needs.length ? `<h3>Needs access to</h3><div class="chips">${t.needs.map((n) => `<span class="chip">${esc(RESOURCES.find((r) => r.id === n).name)}</span>`).join('')}</div>` : ''}
         ${unlocksS.length ? `<h3>Unlocks structures</h3><div class="chips">${unlocksS.map((s) => `<button class="chip link" data-ency="struct:${s.id}">${esc(s.name)}</button>`).join('')}</div>` : ''}

@@ -6,6 +6,9 @@ import { B } from '../data/beliefs.js';
 import { R } from '../data/resources.js';
 import { rand } from '../util/rng.js';
 
+// early discoveries come quickly; later eras demand industrial-scale science
+const ERA_MUL = [1.0, 1.25, 1.6, 2.0, 2.5, 3.0, 3.6, 4.2, 4.8, 5.5];
+
 // category tags per tech derived from what it unlocks
 const TECH_TAGS = TECHS.map((t) => {
   const tags = {};
@@ -34,7 +37,7 @@ export class Research {
 
   cost(civ, t) {
     const sim = this.sim;
-    let c = t.cost * sim.researchCostMul;
+    let c = t.cost * sim.researchCostMul * ERA_MUL[t.era];
     let known = 0, partner = false;
     for (const o of sim.civs) {
       if (o === civ || !o.alive || !civ.contact[o.id] || !o.techs[t.idx]) continue;
