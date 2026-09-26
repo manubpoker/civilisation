@@ -164,6 +164,7 @@ export const STRUCTURES = [
       { in: { wood: 2, stone: 2 }, out: { tools: 1 }, time: 120 },
       { in: { bronze: 1, wood: 1 }, out: { tools: 2 }, time: 100 },
       { in: { iron: 1, wood: 1 }, out: { tools: 3 }, time: 100, tech: 'iron_working' },
+      { in: { iron: 3, tools: 2 }, out: { machinery: 1 }, time: 240, tech: 'steam_engine' },
       { in: { steel: 1 }, out: { tools: 4 }, time: 90, tech: 'steel' }],
     style: { kind: 'forge', wall: '#7a6a5a', roof: '#4a4a4a' }, desc: 'Forges tools that speed up building and harvesting.' }),
   st({ id: 'weapon_forge', name: 'Weaponsmith', cat: 'military', tech: 'bronze_working', size: [4, 4], cost: { stone: 20, wood: 20 }, work: 500, hp: 400,

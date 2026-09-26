@@ -908,6 +908,8 @@ export class Sim {
       else if (d === 0 && !w.bld[p] && !(w.road[p] & 7)) {
         const t = w.ter[p];
         if ((t === T.FOREST || t === T.JUNGLE || t === T.TAIGA) && w.traffic[p] < 3 && ((p * 2654435761) >>> 0) % 1000 < 60) { this.addDeposit(p, D.SAPLING, 1); this.saplings.push(p); }
+        // weathering and landslips expose fresh stone in the hills
+        else if ((t === T.HILLS || t === T.MOUNTAIN) && rand() < 0.012) this.addDeposit(p, D.STONE, 50 + randInt(60));
       }
       // traffic: desire paths form and fade
       const tr = w.traffic[p];
