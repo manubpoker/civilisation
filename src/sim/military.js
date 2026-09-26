@@ -417,7 +417,7 @@ export class Military {
     const pr = sim.diplomacy.pair(byCiv, oldCiv.id);
     // a people besieged in its last town capitulates rather than perish,
     // unless a ruthless conqueror faces only a remnant
-    const ruthless = newCiv.beliefAvg[B.MERCY] < -30 && oldCiv.pop < 150;
+    const ruthless = newCiv.beliefAvg[B.MERCY] < -45 && oldCiv.pop < 100;
     const remaining = oldCiv.pop - town.pop;
     const decisive = oldCiv.towns.length <= 1 || remaining < 60 || (wasCapital && remaining < oldCiv.pop * 0.35);
     if (decisive && !ruthless) { this.capitulate(oldCiv, newCiv, pr, town); return; }
