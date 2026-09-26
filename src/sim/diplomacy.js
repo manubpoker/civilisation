@@ -162,10 +162,13 @@ export class Diplomacy {
       const dur = (now - p.warStart) / CFG.TICKS_PER_YEAR;
       const forgive = me.beliefAvg[B.FORGIVENESS];
       const pacifism = -aggr;
-      const peaceDrive = me.warWeariness * 1.2 + pacifism * 0.4 + forgive * 0.3 + dur * 6 + (1 - ratio) * 40 - p.grudge * 0.5 - me.beliefAvg[B.PRIDE] * 0.2;
+      const caps = p.captures || {};
+      // conquerors are sated by the towns they took; losers want the bleeding to stop
+      const peaceDrive = me.warWeariness * 1.2 + pacifism * 0.4 + forgive * 0.3 + dur * 6 + (1 - ratio) * 40 - p.grudge * 0.5 - me.beliefAvg[B.PRIDE] * 0.2
+        + (caps[me.id] || 0) * 28 + (caps[them.id] || 0) * 18;
       if (peaceDrive > 55 && chance(0.2)) {
         // the other side accepts if also weary or if the offer comes from the stronger side
-        const theirDrive = them.warWeariness * 1.2 - them.beliefAvg[B.AGGRESSION] * 0.3 + (ratio - 1) * 40 + dur * 5;
+        const theirDrive = them.warWeariness * 1.2 - them.beliefAvg[B.AGGRESSION] * 0.3 + (ratio - 1) * 40 + dur * 5 + (caps[them.id] || 0) * 30;
         if (theirDrive > 25 || dur > 12) this.makePeace(me, them, p, ratio);
       }
     }
@@ -174,7 +177,7 @@ export class Diplomacy {
   declareWar(me, them, p) {
     const sim = this.sim;
     p.war = true; p.trade = false; p.openBorders = false; p.alliance = false; p.nonAggression = false;
-    p.warStart = sim.tick; p.casualties = [0, 0];
+    p.warStart = sim.tick; p.casualties = [0, 0]; p.captures = {};
     me.lastWarTick = sim.tick; them.lastWarTick = sim.tick;
     me.warWeariness = 0; them.warWeariness = Math.max(0, them.warWeariness);
     this.addRel(me.id, them.id, -30);

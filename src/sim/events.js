@@ -6,6 +6,7 @@ import { PROFESSIONS } from '../data/professions.js';
 import { S, A } from './people.js';
 import { rand, randInt, chance } from '../util/rng.js';
 
+const GREAT_RATE = 0.12;
 const GREAT = [
   { kind: 'Scientist', fx: (sim, civ) => { civ.researchPts += 400 + civ.era * 250; }, belief: B.REASON },
   { kind: 'Artist', fx: (sim, civ) => { civ.culture += 300 + civ.era * 100; civ.goldenAge = Math.max(civ.goldenAge, 3); }, belief: B.ART },
@@ -48,8 +49,8 @@ export class Events {
     if (chance(0.025 / Y)) this.earthquake();
     // great people
     for (const civ of sim.civs) {
-      if (!civ.alive || civ.pop < 50) continue;
-      const p = (0.25 + civ.culture / 20000 + civ.era * 0.05) / Y;
+      if (!civ.alive || civ.pop < 90) continue;
+      const p = (GREAT_RATE + Math.min(0.3, civ.culture / 40000) + civ.era * 0.03) / Y;
       if (chance(p)) this.greatPerson(civ);
       if (civ.goldenAge > 0) { civ.goldenAge -= 1 / Y; if (civ.goldenAge <= 0) { civ.goldenAge = 0; civ.recomputeMods(); sim.chronicle(`The golden age of ${civ.name} fades.`, civ.id, 'culture'); } }
       else if (civ.happiness > 72 && civ.cultureRate > 8 && chance(0.1 / Y)) {

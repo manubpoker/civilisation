@@ -16,13 +16,16 @@ function readSeed() {
   return 7;
 }
 
-function start() {
-  const seed = readSeed();
+let runToken = 0;
+
+function start(seedOverride) {
+  const token = ++runToken;
+  const seed = seedOverride !== undefined ? seedOverride : readSeed();
   const sim = new Sim(seed);
   sim.resColor = (r) => RESOURCES[r].color;
   const controller = {
-    speed: 2,
-    prevSpeed: 2,
+    speed: 3,
+    prevSpeed: 3,
     setSpeed(k) { if (k !== 0) this.prevSpeed = k; this.speed = Math.max(0, Math.min(SPEEDS.length - 1, k)); },
     togglePause() { this.setSpeed(this.speed === 0 ? this.prevSpeed || 2 : 0); },
   };
@@ -37,11 +40,19 @@ function start() {
   ui.layout();
   window.addEventListener('resize', () => ui.layout());
   window.__sim = sim; window.__renderer = renderer; window.__ui = ui;
+  ui.seed = seed;
+  ui.onNewWorld = (s) => {
+    ui.destroy();
+    app.innerHTML = `<div id="boot" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0f151b;color:#8c9a96;font-family:'Alegreya Sans',system-ui,sans-serif">Raising a new continent…</div>`;
+    runToken++;
+    setTimeout(() => { try { start(s); } catch (err) { console.error(err); } }, 30);
+  };
 
   let last = performance.now();
   let debt = 0;
   let fpsT = 0, frames = 0;
   function frame(now) {
+    if (token !== runToken) return;
     const dtReal = Math.min(0.25, (now - last) / 1000);
     last = now;
     ui.keyPan(dtReal);

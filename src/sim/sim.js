@@ -199,6 +199,7 @@ export class Sim {
     t.feedRatio = 1;
     t.passivePower = 0;
     t.coastal = !!this.nav.coastal[this.nav.cellOf(x, y)] || this.nearWater(x, y, 40);
+    t.origCiv = civ.id;
     this.towns.push(t);
     civ.towns.push(id);
     if (civ.capital < 0) { civ.capital = id; t.isCapital = true; }
@@ -570,6 +571,10 @@ export class Sim {
   chronicle(text, civ = -1, kind = 'info', person = -1) {
     const e = { tick: this.tick, year: this.year, season: this.season, text, civ, kind, person };
     if (person >= 0 && this.people.civ[person] >= 0) { e.x = this.people.x[person]; e.y = this.people.y[person]; }
+    else {
+      // locate the event at the first town it mentions
+      for (const t of this.towns) if (t && text.includes(t.name)) { const c = this.buildings[t.center]; e.x = c ? c.cx : t.cx; e.y = c ? c.cy : t.cy; break; }
+    }
     this.chronicleLog.push(e);
     if (this.chronicleLog.length > 600) this.chronicleLog.splice(0, this.chronicleLog.length - 600);
     if (this.onChronicle) this.onChronicle(e);
@@ -652,6 +657,8 @@ export class Sim {
 
   secede(town) {
     const parent = this.civs[town.civ];
+    const orig = this.civs[town.origCiv];
+    if (orig && !orig.alive && town.origCiv !== town.civ) { this.restoreCiv(orig, town); return; }
     const id = this.civs.length;
     if (id >= CFG.CIV_COLORS.length) return;
     const name = `${REBEL_PREFIX[id % REBEL_PREFIX.length]} ${REBEL_SUFFIX[randInt(REBEL_SUFFIX.length)]} of ${town.name}`;
@@ -682,6 +689,31 @@ export class Sim {
     this.territoryDirty = true;
     this.chronicle(`⚑ ${town.name} rebels against ${parent.name} and declares independence as the ${name}!`, id, 'rebellion');
     if (parent.beliefAvg[B.AUTHORITY] > 0 || parent.beliefAvg[B.AGGRESSION] > 0) this.diplomacy.declareWar(parent, civ, this.diplomacy.pair(parent.id, id));
+    this.military.refreshWarCache();
+  }
+
+  // A conquered people rises again in one of its old towns.
+  restoreCiv(civ, town) {
+    const parent = this.civs[town.civ];
+    civ.alive = true;
+    civ.towns = [town.id];
+    civ.capital = town.id;
+    for (let t = 0; t < TECHS.length; t++) if (parent.techs[t] && !civ.techs[t]) civ.learn(t, this.year);
+    parent.towns = parent.towns.filter((t) => t !== town.id);
+    town.civ = civ.id; town.isCapital = true; town.shipments = [];
+    for (const bid of town.buildings) { const b = this.buildings[bid]; if (b) { b.civ = civ.id; this.renderDirtyBuildings.push(bid); if (this.wallBuildings.has(bid)) this.setWall(b, true); } }
+    const P = this.people;
+    for (let i = 0; i < P.hwm; i++) if (P.civ[i] === parent.id && P.town[i] === town.id) { this.changeCiv(i, civ.id); P.loyalty[i] = 80; }
+    civ.contact[parent.id] = 1; parent.contact[civ.id] = 1;
+    civ.relations[parent.id] = parent.relations[civ.id] = -70;
+    const pr = this.diplomacy.pair(parent.id, civ.id);
+    pr.war = false; pr.grudge = 40;
+    this.beliefs.daily();
+    civ.recomputeMods();
+    this.research.choose(civ);
+    this.territoryDirty = true;
+    this.chronicle(`⚑ ${town.name} throws off the rule of ${parent.name} — the ${civ.name} is reborn!`, civ.id, 'rebellion');
+    this.diplomacy.declareWar(parent, civ, pr);
     this.military.refreshWarCache();
   }
 

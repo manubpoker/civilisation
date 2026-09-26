@@ -85,6 +85,7 @@ export class Planner {
     cands.sort((a, b) => b.v - a.v);
     const planWants = new Map();
     let tries = 0;
+    let placed = false;
     for (const c of cands.slice(0, 10)) {
       const def = c.def;
       if (!town.has(def.cost)) {
@@ -102,9 +103,29 @@ export class Planner {
       const b = placeBuilding(sim, def.idx, civ.id, town.id, site.x, site.y, false, !!site.rotate);
       if (def.id === 'palisade' || def.id === 'stone_wall') b.wallRing = true;
       this.lastChoice.set(town.id, def.id);
+      placed = true;
       break;
     }
     town.planWants = planWants;
+    if (!placed && town.construction.length === 0 && chance(0.25)) this.renewal(town, civ);
+  }
+
+  // Urban renewal: replace an obsolete dwelling so the next plan builds a better one.
+  renewal(town, civ) {
+    const sim = this.sim;
+    let bestCap = 0, bestDef = null;
+    for (const def of STRUCTURES) if (def.housing && civ.structureAvailable(def) && def.housing > bestCap && def.housing < 300) { bestCap = def.housing; bestDef = def; }
+    if (!bestDef || !town.has(bestDef.cost)) return;
+    let victim = null;
+    for (const id of town.buildings) {
+      const b = sim.buildings[id];
+      if (!b || !b.built || !b.capacity || b.def.housing * 2.5 > bestCap) continue;
+      if (!victim || b.def.housing < victim.def.housing || (b.def.housing === victim.def.housing && b.created < victim.created)) victim = b;
+    }
+    if (!victim) return;
+    // only when the displaced can be rehoused or the town has slack
+    if (town.housingCap - victim.capacity < town.pop * 0.95) return;
+    sim.destroyBuilding(victim, 'renewal');
   }
 
   countBuilders(town) {

@@ -145,6 +145,8 @@ export class Renderer {
       const i = d[k];
       if (this.bldPx[i]) continue;
       this.base[i] = terrainColor(w, i, this.season);
+      const lvl = w.road[i] & 7;
+      if (lvl >= 3 && (((i % this.W) + ((i / this.W) | 0)) % 5 === 0)) { this.lightBuf[i] = rgba(255, 236, 170); this.lightsDirty = true; }
     }
     d.length = 0;
     const seen = new Set();
@@ -275,32 +277,50 @@ export class Renderer {
     return 0;
   }
 
+  rebuildBorders() {
+    const w = this.sim.world, TW = CFG.TW, TH = CFG.TH, S_ = CFG.TER, W = this.W;
+    const owner = w.owner;
+    const px = [], cv = [];
+    for (let ty = 0; ty < TH; ty++) for (let tx = 0; tx < TW; tx++) {
+      const k = ty * TW + tx, o = owner[k];
+      if (o < 0) continue;
+      const left = tx > 0 ? owner[k - 1] : o, up = ty > 0 ? owner[k - TW] : o;
+      const right = tx < TW - 1 ? owner[k + 1] : o, down = ty < TH - 1 ? owner[k + TW] : o;
+      const x0 = tx * S_, y0 = ty * S_;
+      if (left !== o) for (let y = y0; y < y0 + S_ && y < this.H; y++) { px.push(y * W + x0); cv.push(o); }
+      if (up !== o) for (let x = x0; x < x0 + S_ && x < W; x++) { px.push(y0 * W + x); cv.push(o); }
+      if (right === -1) for (let y = y0; y < y0 + S_ && y < this.H; y++) { px.push(y * W + Math.min(W - 1, x0 + S_ - 1)); cv.push(o); }
+      if (down === -1) for (let x = x0; x < x0 + S_ && x < W; x++) { px.push(Math.min(this.H - 1, y0 + S_ - 1) * W + x); cv.push(o); }
+    }
+    this.borderPx = Int32Array.from(px);
+    this.borderCiv = Int8Array.from(cv);
+    this.borderVersion = w.territoryVersion;
+  }
+
   drawOverlay(x0, y0, x1, y1) {
     const sim = this.sim, w = sim.world, buf = this.buf, W = this.W;
     const mode = this.overlay;
-    // borders are always drawn; territory tint only in territory mode
-    const owner = w.owner, TW = CFG.TW, S_ = CFG.TER;
     const civCols = sim.civs.map((c) => c.color);
-    for (let y = y0; y < y1; y++) {
-      const ty = (y / S_) | 0;
-      for (let x = x0; x < x1; x++) {
-        const k = ty * TW + ((x / S_) | 0);
-        const o = owner[k];
-        const i = y * W + x;
-        if (mode === 'territory' && o >= 0) {
-          const c = civCols[o], p = buf[i];
+    if (mode === 'territory') {
+      const owner = w.owner, TW = CFG.TW, S_ = CFG.TER;
+      for (let y = y0; y < y1; y++) {
+        const ty = (y / S_) | 0;
+        for (let x = x0; x < x1; x++) {
+          const o = owner[ty * TW + ((x / S_) | 0)];
+          if (o < 0) continue;
+          const i = y * W + x, c = civCols[o], p = buf[i];
           buf[i] = rgba((p & 255) * 0.62 + c[0] * 0.38, ((p >> 8) & 255) * 0.62 + c[1] * 0.38, ((p >> 16) & 255) * 0.62 + c[2] * 0.38);
         }
-        // border pixels: owner differs from right/bottom neighbour cell at cell edges
-        if (o >= 0 && ((x % S_) === 0 || (y % S_) === 0)) {
-          const left = (x % S_) === 0 && x > 0 ? owner[k - 1] : o;
-          const up = (y % S_) === 0 && y > 0 ? owner[k - TW] : o;
-          if (left !== o || up !== o) {
-            const c = civCols[o];
-            if (((x + y) & 1) === 0 || mode === 'territory') buf[i] = rgba(c[0], c[1], c[2]);
-          }
-        }
       }
+    }
+    if (this.borderVersion !== w.territoryVersion || !this.borderPx) this.rebuildBorders();
+    const bp = this.borderPx, bc = this.borderCiv;
+    const packed = civCols.map((c) => rgba(c[0], c[1], c[2]));
+    for (let k = 0; k < bp.length; k++) {
+      const i = bp[k];
+      const x = i % W, y = (i / W) | 0;
+      if (x < x0 || x >= x1 || y < y0 || y >= y1) continue;
+      if (mode === 'territory' || ((x + y) & 1) === 0) buf[i] = packed[bc[k]];
     }
     if (mode === 'traffic' || mode === 'fertility' || mode === 'pollution' || mode === 'resources') {
       for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
@@ -337,8 +357,24 @@ export class Renderer {
         if (x >= x0 && y >= y0 && x < x1 && y < y1) buf[y * W + x] = rgba(70, 70, 74);
       }
     }
-    // industrial smoke
-    if ((this.frame & 1) === 0) this.smoke = null;
+    // chimney smoke from staffed industry (drifts up and east)
+    if (!this.smokers || (this.frame & 63) === 0) {
+      this.smokers = [];
+      for (const b of sim.buildings) if (b && b.built && b.workers.length && (b.def.fx.pollution || b.def.style.kind === 'kiln' || b.def.style.kind === 'forge' || b.def.style.kind === 'furnace')) this.smokers.push(b);
+    }
+    for (const b of this.smokers) {
+      const cx = b.x + b.w - 2, cy = b.y;
+      const n = 3 + Math.min(8, (b.def.fx.pollution || 1) * 1.5);
+      for (let k = 0; k < n; k++) {
+        const t = ((tick >> 1) + k * 7 + b.id * 13) % 24;
+        const x = cx + ((t * 0.35 + hash2(k, b.id, 3) * 2) | 0), y = cy - 1 - t;
+        if (x < x0 || y < y0 || x >= x1 || y >= y1) continue;
+        const g = 90 + t * 5;
+        const i = y * W + x, p = buf[i];
+        const a = 0.75 - t / 34;
+        buf[i] = rgba((p & 255) * (1 - a) + g * a, ((p >> 8) & 255) * (1 - a) + g * a, ((p >> 16) & 255) * (1 - a) + g * a);
+      }
+    }
     // animals
     const an = sim.animals;
     for (let i = 0; i < an.hwm; i++) {
@@ -385,6 +421,24 @@ export class Renderer {
       let c = P.color[i];
       if (!c || this.colorMode !== 'civ' || (this.frame & 31) === (i & 31)) { c = this.personColor(i); if (this.colorMode === 'civ') P.color[i] = c; }
       buf[y * W + x] = c;
+    }
+    // weather: snow in cold lands in winter, showers in spring
+    if (this.zoom >= 2 && (sim.season === 3 || (sim.season === 0 && ((sim.day * 7) % 3) === 0))) {
+      const snow = sim.season === 3;
+      const w = sim.world;
+      const n = ((x1 - x0) * (y1 - y0)) / (snow ? 260 : 180);
+      const f = this.frame;
+      for (let k = 0; k < n; k++) {
+        const hx = hash2(k, 1, 77), hy = hash2(k, 2, 91);
+        const fall = snow ? f * 0.35 : f * 2.2;
+        const x = (x0 + ((hx * (x1 - x0) + (snow ? Math.sin((f + k) * 0.05) * 2 : fall * 0.25)) % (x1 - x0))) | 0;
+        const y = (y0 + ((hy * (y1 - y0) + fall) % (y1 - y0))) | 0;
+        if (x < x0 || y < y0 || x >= x1 || y >= y1) continue;
+        const i = y * W + x;
+        if (snow && w.temp[i] > 0.47) continue;
+        const p = buf[i];
+        buf[i] = snow ? rgba(240, 244, 250) : rgba(((p & 255) + 150) / 2, (((p >> 8) & 255) + 170) / 2, (((p >> 16) & 255) + 210) / 2);
+      }
     }
     // aircraft (above everything)
     for (const pl of sim.transport.planes) {

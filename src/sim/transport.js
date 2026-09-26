@@ -384,12 +384,48 @@ export class Transport {
     }
   }
 
-  // Daily: spawn ships at docks, flights at airports, plan railways.
+  // Road builders connect their town to the nearest unlinked sister town.
+  planRoads(civ) {
+    const sim = this.sim, w = sim.world;
+    if (civ.flags.roadLevel < 2 || civ.towns.length < 2) return;
+    for (const tid of civ.towns) {
+      const town = sim.towns[tid];
+      if (!town || town.roadPlan.length) continue;
+      if (!sim.findBuildingOfType(town, 'road_guild')) continue;
+      town.roadLinks = town.roadLinks || new Set();
+      let best = null, bd = 1e18;
+      for (const oid of civ.towns) {
+        const o = sim.towns[oid];
+        if (!o || o === town || town.roadLinks.has(oid)) continue;
+        const d = (o.cx - town.cx) ** 2 + (o.cy - town.cy) ** 2;
+        if (d < bd) { bd = d; best = o; }
+      }
+      if (!best) continue;
+      town.roadLinks.add(best.id);
+      if (best.roadLinks) best.roadLinks.add(town.id); else best.roadLinks = new Set([town.id]);
+      const a = sim.buildings[town.center], b = sim.buildings[best.center];
+      if (!a || !b) continue;
+      const path = this.railPath(a, b);
+      if (!path) continue;
+      const pixels = [];
+      for (const p of path) {
+        if (w.bld[p] || (w.road[p] & 7) >= civ.flags.roadLevel) continue;
+        if (w.ter[p] === T.RIVER && !civ.flags.bridge) continue;
+        pixels.push(p);
+      }
+      town.roadPlan = pixels.reverse();
+      town.roadPlanSet = new Set(pixels);
+      if (pixels.length > 20) sim.chronicle(`Road builders of ${town.name} begin a highway to ${best.name}.`, civ.id, 'transport');
+    }
+  }
+
+  // Daily: spawn ships at docks, flights at airports, plan railways and roads.
   daily() {
     const sim = this.sim;
     for (const civ of sim.civs) {
       if (!civ.alive) continue;
       if (civ.flags.rail && sim.day % 3 === 0) this.planLines(civ);
+      if (sim.day % 4 === 1) this.planRoads(civ);
       const airports = [];
       for (const tid of civ.towns) {
         const town = sim.towns[tid];

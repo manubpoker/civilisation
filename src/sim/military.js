@@ -308,7 +308,9 @@ export class Military {
     let atk = me.atk * civ.mod.attack * (0.7 + rand() * 0.6);
     if (me.antiCav && them.cav) atk *= me.antiCav;
     if (P.army[i] >= 0) atk *= 1 + this.commandBonus(i);
-    const def = them.def * tciv.mod.defense;
+    let def = them.def * tciv.mod.defense;
+    // fighting on home ground
+    if (sim.world.ownerAt(P.x[t] | 0, P.y[t] | 0) === P.civ[t]) def = def * 1.25 + 1;
     const dmg = Math.max(1, atk - def * 0.5) * 100 / (100 + (them.hp || 0));
     P.health[t] -= dmg;
     if (me.range > 3) sim.projectile(P.x[i], P.y[i], P.x[t], P.y[t], me.gun ? 2 : 1);
@@ -395,6 +397,9 @@ export class Military {
     const oldCiv = sim.civs[town.civ], newCiv = sim.civs[byCiv];
     if (!oldCiv || !newCiv || town.civ === byCiv) return;
     const wasCapital = oldCiv.capital === town.id;
+    const pr = sim.diplomacy.pair(byCiv, oldCiv.id);
+    pr.captures = pr.captures || {};
+    pr.captures[byCiv] = (pr.captures[byCiv] || 0) + 1;
     sim.chronicle(`🏰 ${newCiv.name} captures ${town.name} from ${oldCiv.name}!`, byCiv, 'conquest');
     // transfer buildings
     for (const id of town.buildings) {

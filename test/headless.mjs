@@ -43,3 +43,11 @@ for (const c of sim.civs) {
   console.log(' techs:', TECHS.filter((t) => c.techs[t.idx]).map((t) => t.name).join(', '));
   console.log(' stats:', JSON.stringify(c.stats));
 }
+// coverage report
+const everS = new Set(), everP = new Set();
+for (const b of sim.buildings) if (b) everS.add(b.def.id);
+for (const c of sim.civs) { STRUCTURES.forEach((s, k) => { if (c.structCount[k] > 0) everS.add(s.id); }); PROFESSIONS.forEach((p, k) => { if (c.profCount[k] > 0) everP.add(p.id); }); }
+console.log(`\nstructures seen ${everS.size}/100; missing: ${STRUCTURES.filter((s) => !everS.has(s.id)).map((s) => s.id).join(' ')}`);
+console.log(`professions seen ${everP.size}/100; missing: ${PROFESSIONS.filter((p) => !everP.has(p.id)).map((p) => p.id).join(' ')}`);
+console.log('ships', sim.transport.ships.length, 'trains', sim.transport.trains.length, 'rail lines', sim.transport.lines.length, 'planes', sim.transport.planes.length, 'armies', sim.military.armies.length);
+if (process.env.CHRON) for (const e of sim.chronicleLog.slice(-120)) console.log(`  [Y${e.year}] ${e.text}`);

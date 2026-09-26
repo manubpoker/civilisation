@@ -28,7 +28,7 @@ export class Settle {
       let src = null, bs = 0;
       for (const tid of civ.towns) {
         const t = sim.towns[tid];
-        if (!t || t.pop < 150 || t.foodDays < 8) continue;
+        if (!t || t.pop < 150 || t.foodDays < 4) continue;
         const s = t.pop - t.housingCap * 0.8 + t.pop * 0.1;
         if (s > bs) { bs = s; src = t; }
       }

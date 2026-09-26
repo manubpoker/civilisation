@@ -62,6 +62,7 @@ export class UI {
           </select>
           <button class="iconbtn" id="btnNight" aria-pressed="true" title="Day/night cycle (N)">Night</button>
           <button class="iconbtn" id="btnLabels" aria-pressed="true" title="Town &amp; army labels (L)">Labels</button>
+          <button class="iconbtn" id="btnDirector" aria-pressed="false" title="Director: the camera chases the story (V)">Director</button>
           <button class="iconbtn" id="btnHelp" title="How to watch (H)">Guide</button>
         </div>
       </header>
@@ -72,6 +73,7 @@ export class UI {
       </aside>
       <section id="inspector" class="panel" hidden></section>
       <div id="minimapWrap" class="panel"><canvas id="minimap" width="280" height="175" aria-label="Minimap"></canvas></div>
+      <div id="legendbar" class="panel" hidden></div>
       <div id="toasts"></div>
       <div id="tooltip" hidden></div>
       <div id="modal" hidden></div>
@@ -82,12 +84,13 @@ export class UI {
   bind() {
     const r = this.r;
     $('#speeds').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) this.ctl.setSpeed(+b.dataset.speed); });
-    $('#colorMode').addEventListener('change', (e) => { r.colorMode = e.target.value; $('#beliefScale').hidden = r.colorMode !== 'belief'; this.clearColors(); });
-    $('#beliefScale').addEventListener('change', (e) => { r.beliefScale = +e.target.value; });
+    $('#colorMode').addEventListener('change', (e) => { r.colorMode = e.target.value; $('#beliefScale').hidden = r.colorMode !== 'belief'; this.clearColors(); this.legend(); });
+    $('#beliefScale').addEventListener('change', (e) => { r.beliefScale = +e.target.value; this.legend(); });
     $('#overlay').addEventListener('change', (e) => { r.overlay = e.target.value; });
     $('#btnNight').addEventListener('click', (e) => { r.night = !r.night; e.target.setAttribute('aria-pressed', r.night); });
     $('#btnLabels').addEventListener('click', (e) => { r.showLabels = !r.showLabels; e.target.setAttribute('aria-pressed', r.showLabels); });
     $('#btnHelp').addEventListener('click', () => this.showHelp());
+    $('#btnDirector').addEventListener('click', () => this.toggleDirector());
     $('#mbCivs').addEventListener('click', () => { $('#ledger').classList.toggle('open'); $('#dossier').classList.remove('open'); });
     $('#mbDossier').addEventListener('click', () => { $('#dossier').classList.toggle('open'); $('#ledger').classList.remove('open'); });
     $('.tabs').addEventListener('click', (e) => {
@@ -111,6 +114,7 @@ export class UI {
     $('#inspector').addEventListener('click', (e) => this.onInspectorClick(e));
     $('#modal').addEventListener('click', (e) => {
       if (e.target.id === 'modal' || e.target.closest('[data-close]')) { $('#modal').hidden = true; return; }
+      if (e.target.closest('[data-newworld]') && this.onNewWorld) { this.onNewWorld(1 + ((Math.random() * 99999) | 0)); return; }
       const l = e.target.closest('[data-ency]');
       if (l) this.showEncyclopedia(l.dataset.ency);
     });
@@ -171,14 +175,37 @@ export class UI {
       this.wheelAcc = (this.wheelAcc || 0) + e.deltaY;
       if (Math.abs(this.wheelAcc) > 40) { r.zoomAt(e.clientX - rect.left, e.clientY - rect.top, this.wheelAcc < 0 ? 1 : -1); this.wheelAcc = 0; }
     }, { passive: false });
-    window.addEventListener('keydown', (e) => this.onKey(e));
-    window.addEventListener('keyup', (e) => { this.keys && this.keys.delete(e.key.toLowerCase()); });
+    this._onKey = (e) => this.onKey(e);
+    this._onKeyUp = (e) => { this.keys && this.keys.delete(e.key.toLowerCase()); };
+    window.addEventListener('keydown', this._onKey);
+    window.addEventListener('keyup', this._onKeyUp);
     this.keys = new Set();
+  }
+
+  destroy() {
+    window.removeEventListener('keydown', this._onKey);
+    window.removeEventListener('keyup', this._onKeyUp);
+    this.sim.onChronicle = null;
   }
 
   layout() {
     const tb = $('#topbar');
     if (tb) this.app.style.setProperty('--top', tb.offsetHeight + 'px');
+  }
+
+  legend() {
+    const r = this.r, el = $('#legendbar');
+    const grad = (a, b, l, rr) => `<span>${esc(l)}</span><i style="background:linear-gradient(90deg,${a},${b})"></i><span>${esc(rr)}</span>`;
+    let html = '';
+    switch (r.colorMode) {
+      case 'belief': { const sc = SCALES[r.beliefScale]; html = grad('rgb(30,170,255)', 'rgb(255,30,30)', sc.neg.name, sc.pos.name); break; }
+      case 'happiness': html = grad('rgb(255,60,60)', 'rgb(0,255,60)', 'miserable', 'content'); break;
+      case 'health': html = grad('rgb(255,0,90)', 'rgb(0,255,90)', 'dying', 'healthy') + '<span style="color:rgb(150,255,60)">■ plague</span>'; break;
+      case 'age': html = grad('rgb(255,220,120)', 'rgb(55,100,255)', 'newborn', '80 years'); break;
+      case 'profession': html = '<span>Each profession has its own colour — hover a person to see who they are.</span>'; break;
+    }
+    el.innerHTML = html;
+    el.hidden = !html;
   }
 
   clearColors() { const P = this.sim.people; P.color.fill(0); }
@@ -198,6 +225,7 @@ export class UI {
     else if (k === 'n') $('#btnNight').click();
     else if (k === 'l') $('#btnLabels').click();
     else if (k === 'h' || k === '?') this.showHelp();
+    else if (k === 'v') this.toggleDirector();
     else if (k === 'g') this.showTechTree();
   }
 
@@ -247,6 +275,22 @@ export class UI {
     if (!w.inb(wx | 0, wy | 0)) { tip.hidden = true; return; }
     const i = (wy | 0) * w.W + (wx | 0);
     const parts = [];
+    // a person under the cursor?
+    if (r.zoom >= 3) {
+      const P = sim.people;
+      let who = -1, bd = 0.9;
+      sim.spatial.query(wx, wy, 2, (j) => {
+        if (P.civ[j] < 0 || P.state[j] === S.INSIDE) return false;
+        const d = (P.x[j] + 0.5 - wx) ** 2 + (P.y[j] + 0.5 - wy) ** 2;
+        if (d < bd) { bd = d; who = j; }
+        return false;
+      });
+      if (who >= 0) {
+        const adult = P.age[who] >= CFG.ADULT_AGE;
+        const role = adult ? PROFESSIONS[P.prof[who]].name : 'child';
+        parts.push(`<b style="color:${sim.civs[P.civ[who]].css}">${esc(sim.personName(who))}</b> · ${esc(role)}, ${Math.floor(P.age[who])} · ${esc(STATE_NAMES[P.state[who]] || '')}`);
+      }
+    }
     const bid = w.bld[i] - 1;
     if (bid >= 0 && sim.buildings[bid]) {
       const b = sim.buildings[bid];
@@ -271,6 +315,7 @@ export class UI {
   // ---------------------------------------------------------------- frame
   update(nowMs) {
     const sim = this.sim, r = this.r;
+    this.directorTick(nowMs);
     if (this.follow && r.selected >= 0 && sim.people.civ[r.selected] >= 0) { r.cam.x = sim.people.x[r.selected]; r.cam.y = sim.people.y[r.selected]; }
     // almanac every frame (cheap)
     const hh = Math.floor(sim.tod * 24), mm = Math.floor((sim.tod * 24 - hh) * 60);
@@ -558,7 +603,36 @@ export class UI {
     if (li) this.flyTo(+li.dataset.x, +li.dataset.y, 6);
   }
 
+  toggleDirector() {
+    this.director = !this.director;
+    $('#btnDirector').setAttribute('aria-pressed', this.director);
+    this.directorNext = 0;
+  }
+
+  // Director mode: cut to the latest dramatic event, otherwise follow a random citizen.
+  directorTick(now) {
+    if (!this.director) return;
+    const sim = this.sim, r = this.r, P = sim.people;
+    if (this.pendingShot && now > (this.directorHold || 0)) {
+      const e = this.pendingShot; this.pendingShot = null;
+      r.cam.x = e.x; r.cam.y = e.y; r.cam.zi = Math.max(r.cam.zi, 5);
+      this.follow = false; r.selected = -1;
+      this.directorHold = now + 9000; this.directorNext = now + 12000;
+      return;
+    }
+    if (now < (this.directorNext || 0)) return;
+    this.directorNext = now + 15000;
+    for (let k = 0; k < 50; k++) {
+      const i = (Math.random() * P.hwm) | 0;
+      if (P.civ[i] < 0 || P.age[i] < CFG.ADULT_AGE || P.state[i] === S.SLEEP) continue;
+      r.selected = i; r.selectedBuilding = -1; this.follow = true; r.cam.zi = 7;
+      this.showInspector();
+      break;
+    }
+  }
+
   onChronicle(e) {
+    if (this.director && e.x !== undefined && (TOAST_KINDS.has(e.kind) || e.kind === 'disaster' || e.kind === 'expansion' || e.kind === 'transport')) this.pendingShot = e;
     if (!TOAST_KINDS.has(e.kind)) return;
     const box = $('#toasts');
     const el = document.createElement('div');
@@ -669,9 +743,12 @@ export class UI {
         <div><span class="kbd">Space</span> pause · <span class="kbd">1</span>–<span class="kbd">8</span> speed</div>
         <div><span class="kbd">T</span> territory · <span class="kbd">N</span> night · <span class="kbd">L</span> labels</div>
         <div><span class="kbd">G</span> technology tree · <span class="kbd">Esc</span> deselect</div>
+        <div><span class="kbd">V</span> Director: the camera chases the story</div>
         <div>Click a civilisation card to fly to its capital</div>
       </div>
       <h3>Reading the map</h3>
+      <h3>This world</h3>
+      <p>Continent seed <span class="num">${this.seed}</span>. <button class="btn primary" data-newworld>Generate a new continent</button></p>
       <p>People take their civilisation's colour, shaded by trade: soldiers glow brightest, children are paler, the sick turn green and celebrated figures gold. Footpaths appear wherever people keep walking; road builders pave the busiest ones, and later come bridges, railways, ships and aircraft. At night the windows light up. Use the <i>People</i> menu to colour everyone by profession, a belief scale, happiness, health or age.</p>`);
   }
 

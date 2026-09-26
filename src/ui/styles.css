@@ -186,8 +186,11 @@ table.data tr.zero td { color: var(--text-3); }
 .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
 .legend i { display: inline-block; width: 10px; height: 3px; margin-right: 4px; vertical-align: middle; }
 
+#legendbar { top: calc(var(--top) + 10px); left: 50%; transform: translateX(-50%); padding: 6px 10px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); z-index: 12; max-width: calc(100% - 32px); }
+#legendbar i { display: inline-block; width: 120px; height: 8px; border-radius: 2px; }
+
 /* toasts */
-#toasts { position: absolute; top: calc(var(--top) + 12px); left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(560px, calc(100% - 32px)); }
+#toasts { position: absolute; top: calc(var(--top) + 50px); left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(560px, calc(100% - 32px)); }
 .toast { background: rgba(12, 18, 23, 0.94); border: 1px solid var(--line-2); border-left: 3px solid var(--brass); padding: 7px 12px; border-radius: 4px; font-size: 14px; box-shadow: var(--shadow); animation: toastIn 0.35s ease-out both; max-width: 100%; }
 .toast.war { border-left-color: var(--bad); }
 .toast.peace { border-left-color: var(--good); }
@@ -205,7 +208,7 @@ table.data tr.zero td { color: var(--text-3); }
 #modal header h2 { margin: 0; font: 400 22px/1.1 var(--f-display); flex: 1; }
 #modal .body { overflow: auto; padding: 14px 16px 18px; }
 #modal .body p { max-width: 68ch; margin: 0 0 10px; line-height: 1.5; }
-.techgrid { position: relative; display: grid; grid-template-columns: repeat(10, minmax(110px, 1fr)); gap: 6px 14px; min-width: 1240px; }
+.techgrid { position: relative; display: grid; grid-template-columns: repeat(10, minmax(104px, 1fr)); gap: 6px 12px; min-width: 1150px; }
 .techgrid .era { font: 400 14px/1.2 var(--f-display); color: var(--brass); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 .tech { position: relative; z-index: 1; border: 1px solid var(--line-2); border-radius: 4px; padding: 4px 6px 5px; background: var(--panel-2); font-size: 11.5px; line-height: 1.2; cursor: pointer; min-height: 38px; }
 .tech:hover { border-color: var(--brass); }
