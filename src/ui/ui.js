@@ -423,7 +423,8 @@ export class UI {
         }).join('')}</tr>`;
       }
     }
-    const table = `<table class="data"><thead><tr><th>Technology</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
+    const tally = `<p class="tally">${sim.civs.map((c) => `<span style="color:${c.css}">${esc(c.adjective || c.name)} <b>${c.techCount}</b>/100</span>`).join('')}<span>technologies known</span></p>`;
+    const table = tally + `<table class="data"><thead><tr><th>Technology</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
     if (inner) return table;
     return this.tools('<button class="btn primary" data-open="techtree">Open tech tree</button>') + `<div id="tabcontent">${table}</div>`;
   }
@@ -438,7 +439,8 @@ export class UI {
         <div class="track"><span class="zone" style="left:0;width:${50 - ADOPT_THRESHOLD / 2}%"></span><span class="zone" style="right:0;width:${50 - ADOPT_THRESHOLD / 2}%"></span>${marks}</div>
         <button class="link r ${posOn ? 'on' : ''}" data-ency="belief:${s.key}+">${esc(s.pos.name)}</button></div>`;
     }).join('');
-    const inner_ = `<p class="muted" style="font-size:12px;margin:0 0 6px">Each marker is a civilisation's average across its people. Past the shaded zones a belief is adopted; beyond ±${BAN_THRESHOLD} its bans become law.</p>${rows}`;
+    const tally = `<p class="tally">${sim.civs.filter((c) => c.alive).map((c) => `<span style="color:${c.css}">${esc(c.adjective || c.name)} <b>${c.adopted.reduce((a, v) => a + (v ? 1 : 0), 0)}</b> of 100 beliefs adopted · ${[...c.bans].length} bans</span>`).join('')}</p>`;
+    const inner_ = tally + `<p class="muted" style="font-size:12px;margin:0 0 6px">Each marker is a civilisation's average across its people. Past the shaded zones a belief is adopted; beyond ±${BAN_THRESHOLD} its bans become law.</p>${rows}`;
     if (inner) return inner_;
     return this.tools() + `<div id="tabcontent">${inner_}</div>`;
   }
@@ -458,7 +460,8 @@ export class UI {
         html += `<tr class="${zero ? 'zero' : ''}"><td><button class="link" data-ency="prof:${p.id}">${esc(p.name)}</button></td>${counts.map((n, k) => `<td class="n" style="color:${n > 0 ? sim.civs[k].css : ''}">${n > 0 ? n : '·'}</td>`).join('')}</tr>`;
       }
     }
-    const table = `<table class="data"><thead><tr><th>Profession</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
+    const tally = `<p class="tally"><span><b>${sim.everProf.size}</b>/100 professions practised so far</span>${sim.civs.filter((c) => c.alive).map((c) => `<span style="color:${c.css}">${esc(c.adjective || c.name)} ${c.profCount.reduce((a, n) => a + (n > 0 ? 1 : 0), 0)} now</span>`).join('')}</p>`;
+    const table = tally + `<table class="data"><thead><tr><th>Profession</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
     if (inner) return table;
     return this.tools() + `<div id="tabcontent">${table}</div>`;
   }
@@ -482,7 +485,8 @@ export class UI {
         }).join('')}</tr>`;
       }
     }
-    const table = `<table class="data"><thead><tr><th>Structure</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
+    const tally = `<p class="tally"><span><b>${sim.everBuilt.size}</b>/100 kinds of structure raised so far</span>${sim.civs.filter((c) => c.alive).map((c) => `<span style="color:${c.css}">${esc(c.adjective || c.name)} ${c.structCount.reduce((a, n) => a + (n > 0 ? 1 : 0), 0)} standing</span>`).join('')}</p>`;
+    const table = tally + `<table class="data"><thead><tr><th>Structure</th>${sim.civs.map((c) => `<th class="n" style="color:${c.css}">${esc((c.adjective || c.name).slice(0, 8))}</th>`).join('')}</tr></thead><tbody>${html}</tbody></table>`;
     if (inner) return table;
     return this.tools('<span class="muted" style="font-size:11px">○ available · ⊘ outlawed</span>') + `<div id="tabcontent">${table}</div>`;
   }

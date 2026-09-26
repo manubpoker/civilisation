@@ -77,7 +77,7 @@ export class Sim {
     this.borders = new Float32Array(64);
     this.history = [];
     this.everBuilt = new Set();
-    this.everProf = new Set();
+    this.everProf = new Set([P_LABORER]);
     // subsystems
     this.jobs = new Jobs(this);
     this.lifecycle = new Lifecycle(this);

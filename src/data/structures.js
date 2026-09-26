@@ -15,7 +15,7 @@ export const STRUCTURES = [
   // ------------------------------------------------------------------ CIVIC (8)
   st({ id: 'campfire', name: 'Tribal Campfire', cat: 'civic', tech: 'fire', size: [5, 5], cost: { wood: 10 }, work: 150, hp: 300,
     jobs: { builder: 4, scout: 1 }, storage: 300, dropoff: true, center: 1, housing: 4,
-    aura: { radius: 20, happy: 2, beliefs: { tradition: 0.02, ancestry: 0.02 } },
+    aura: { radius: 20, happy: 2, beliefs: { tradition: 0.01, ancestry: 0.02 } },
     style: { kind: 'camp', wall: '#6b4a2b', roof: '#e0782a' }, desc: 'The heart of a tribe: a fire, a store and a gathering place.' }),
   st({ id: 'town_hall', name: 'Town Hall', cat: 'civic', tech: 'code_of_laws', size: [7, 6], cost: { wood: 40, stone: 60 }, work: 1400, hp: 1200,
     jobs: { builder: 6, administrator: 2, scout: 1 }, storage: 800, dropoff: true, center: 2, upgrades: 'campfire',

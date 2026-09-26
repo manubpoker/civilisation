@@ -237,3 +237,6 @@ table.data tr.zero td { color: var(--text-3); }
 .why .up { color: var(--good); }
 .why .down { color: var(--bad); }
 .why .tgt { color: var(--text-3); }
+
+.tally { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; font: 12px/1.4 var(--f-mono); color: var(--text-2); }
+.tally b { color: var(--text); font-weight: 600; }

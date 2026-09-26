@@ -576,7 +576,7 @@ function finishField(sim, i) {
   if (f.horses && civ.flags.horses && chance(f.horses)) town.add(R('horses'), 1);
   wb.growth = Math.min(1, wb.growth + 0.02);
   P.skill[i] = Math.min(100, P.skill[i] + 0.2);
-  if (P.b(i, B.TRADITION) < 30 && chance(0.05)) P.pushB(i, B.TRADITION, 1);
+  if (P.b(i, B.TRADITION) < 15 && chance(0.02)) P.pushB(i, B.TRADITION, 1);
 }
 
 function plantThink(sim, i, town, wb) {
