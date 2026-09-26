@@ -153,6 +153,8 @@ export class Civ {
     }
     if (this.goldenAge > 0) { m.happy += 5; m.culture += 0.3; m.research += 0.15; }
     for (const k of Object.keys(m)) if (k !== 'happy' && k !== 'lifespan' && m[k] < 0.05) m[k] = 0.05;
+    // even the most anti-intellectual people keeps learning, slowly
+    if (m.research < 0.3) m.research = 0.3;
     this.mod = m;
   }
 

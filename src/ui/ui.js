@@ -358,7 +358,7 @@ export class UI {
           <div class="stat"><b>${c.techCount}</b><span>techs</span></div>
           <div class="stat"><b>${c.soldiers}</b><span>soldiers</span></div>
           <div class="stat"><b>${Math.round(c.happiness)}</b><span>content</span></div>
-          <div class="stat"><b>${fmt(c.researchRate * c.mod.research)}</b><span>science/d</span></div>
+          <div class="stat"><b>${fmt(c.researchRate)}</b><span>science/d</span></div>
           <div class="stat"><b>${fmt(c.culture)}</b><span>culture</span></div>
           <div class="stat"><b>${fmt(c.stockTotal[sim.RES_COINS])}</b><span>coins</span></div>
         </div>
