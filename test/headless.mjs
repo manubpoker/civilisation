@@ -48,6 +48,8 @@ for (const c of sim.civs) {
   console.log(' structures:', st.join(' '));
   console.log(' techs:', TECHS.filter((t) => c.techs[t.idx]).map((t) => t.name).join(', '));
   console.log(' stats:', JSON.stringify(c.stats));
+  const foodW = PROFESSIONS.reduce((a, p, k) => a + (p.cat === 'food' ? c.profCount[k] : 0), 0);
+  console.log(` food workers ${foodW} of ${c.adults} adults (${(foodW / Math.max(1, c.adults) * 100).toFixed(0)}%), farm mod ${c.mod.farm.toFixed(2)}, birth mod ${c.mod.birth.toFixed(2)}`);
 }
 // coverage report
 const everS = new Set(sim.everBuilt), everP = new Set([...sim.everProf].map((k) => PROFESSIONS[k].id));

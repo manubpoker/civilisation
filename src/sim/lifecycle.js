@@ -253,7 +253,10 @@ export class Lifecycle {
     P.target[i] = best.id;
     if (best.civ !== civ.id) {
       civ.refugees = (civ.refugees || 0) + 1;
-      if (civ.refugees % 20 === 1) sim.chronicle(`Famine refugees flee ${town.name} for ${best.name} in the lands of ${sim.civs[best.civ].name}.`, civ.id, 'migration');
+      if (sim.tick - (civ.lastRefugeeNote || -1e9) > CFG.TICKS_PER_DAY * 6) {
+        civ.lastRefugeeNote = sim.tick;
+        sim.chronicle(`Famine refugees flee ${town.name} for ${best.name} in the lands of ${sim.civs[best.civ].name}.`, civ.id, 'migration');
+      }
     }
   }
 

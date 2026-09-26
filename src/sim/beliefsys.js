@@ -142,17 +142,18 @@ export class BeliefSystem {
       if (chance(1 / (CFG.DAYS_PER_YEAR * 6))) this.spawnProphet(civ);
     }
     // wartime identity: peoples at war define themselves against the enemy's creed
-    if (sim.day % 3 === 0) {
+    if (sim.day % 6 === 0) {
       for (const civ of sim.civs) {
         if (!civ.alive) continue;
         for (const foe of sim.civs) {
           if (foe === civ || !foe.alive || !sim.military.atWarBetween(civ.id, foe.id)) continue;
           const scales = [];
-          for (let s = 0; s < NB; s++) if (foe.adopted[s] && foe.adopted[s] !== civ.adopted[s]) scales.push(s);
+          // not on scales where we already stand firmly opposed
+          for (let s = 0; s < NB; s++) if (foe.adopted[s] && foe.adopted[s] !== civ.adopted[s] && civ.beliefAvg[s] * foe.adopted[s] > -25) scales.push(s);
           if (!scales.length) continue;
           for (let k = 0; k < 2; k++) {
             const s = scales[randInt(scales.length)];
-            this.shock(civ.id, s, -foe.adopted[s] * 2, 0.08);
+            this.shock(civ.id, s, -foe.adopted[s] * 2, 0.05);
           }
         }
       }

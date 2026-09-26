@@ -37,7 +37,13 @@ export class Military {
   desiredSoldiers(civ) {
     const aggr = civ.beliefAvg[B.AGGRESSION];
     let frac = 0.025 + Math.max(-0.02, aggr * 0.0006) + Math.max(0, civ.beliefAvg[B.SUSPICION]) * 0.0002;
-    if (this.atWar(civ.id)) frac *= 2.5;
+    if (this.atWar(civ.id)) {
+      frac *= 2.5;
+      // an outmatched people mobilises everyone it can
+      let foe = 0;
+      for (const o of this.sim.civs) if (o.alive && o !== civ && this.atWarBetween(civ.id, o.id)) foe = Math.max(foe, o.milPower || 0);
+      if (foe > (civ.milPower || 0) * 1.6) frac *= 1.8;
+    }
     let threat = 0;
     for (const o of this.sim.civs) if (o.alive && o !== civ && civ.contact[o.id] && civ.relations[o.id] < -30) threat += 0.01;
     return Math.round(civ.adults * (frac + threat));
@@ -436,8 +442,9 @@ export class Military {
     town.lastCaptured = sim.tick;
     town.shipments = [];
     sim.territoryDirty = true;
-    newCiv.warWeariness = Math.max(0, newCiv.warWeariness - 10);
-    oldCiv.warWeariness += 15;
+    // occupation is a burden on the conqueror; loss hardens or breaks the loser
+    newCiv.warWeariness += 6;
+    oldCiv.warWeariness += 10;
     sim.beliefs.shock(oldCiv.id, B.FORGIVENESS, -6, 0.5);
     sim.beliefs.shock(oldCiv.id, B.PATRIOTISM, 4, 0.4);
     if (wasCapital) sim.relocateCapital(oldCiv);

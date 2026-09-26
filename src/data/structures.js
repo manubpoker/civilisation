@@ -371,7 +371,11 @@ export const STRUCTURES = [
 // Counter-currents: institutions that pull people toward the opposite poles,
 // so no outlook sweeps every people by default.
 const COUNTER_AURAS = {
-  tavern: { zeal: -0.02, piety: -0.01 },
+  tavern: { zeal: -0.02, piety: -0.01, discipline: -0.01 },
+  temple: { theism: 0.02, aggression: -0.01 },
+  monastery: { pride: -0.02, aggression: -0.02 },
+  shrine: { ancestry: 0.01 },
+  sacred_grove: { theism: -0.01 },
   marketplace: { tradition: -0.01, hospitality: 0.01 },
   trading_post: { xenophilia: 0.02, patriotism: -0.01 },
   embassy: { xenophilia: 0.02, suspicion: -0.01 },
@@ -389,7 +393,7 @@ const COUNTER_AURAS = {
   printing_house: { tradition: -0.01 },
   bank: { property: -0.02, ambition: 0.01 },
   stock_exchange: { ambition: 0.02 },
-  amphitheater: { stoicism: -0.02 },
+  amphitheater: { stoicism: -0.02, discipline: -0.01 },
   arena: { mercy: -0.02 },
   courthouse: { forgiveness: -0.01 },
   dock: { sea: 0.03, adventure: 0.01 },
@@ -398,7 +402,9 @@ const COUNTER_AURAS = {
   electronics_plant: { invention: 0.02, ancestry: -0.01 },
   propaganda_office: { patriotism: 0.04, authority: 0.03 },
   barracks: { patriotism: 0.01 },
-  hospital: { mortality: -0.02 },
+  hospital: { mortality: -0.02, aggression: -0.01 },
+  school: { curiosity: 0.01, discipline: 0.01 },
+  bathhouse: { discipline: -0.01 },
 };
 for (const s of STRUCTURES) {
   const add = COUNTER_AURAS[s.id];

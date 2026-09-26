@@ -58,13 +58,15 @@ export class Settle {
     let dest = null, bs = 0;
     for (const tid of civ.towns) {
       const t = sim.towns[tid];
-      if (!t || t === big || t.pop > big.pop / 5 || t.feedRatio < 0.95 || t.foodDays < 3) continue;
+      if (!t || t === big || t.pop > big.pop / 5 || t.feedRatio < 0.98 || t.foodDays < 8 || t.housingCap - t.pop < 6) continue;
       if (!sim.nav.sameLandmass(big.cx, big.cy, t.cx, t.cy)) continue;
       const sc = (big.pop / 5 - t.pop) + t.foodDays;
       if (sc > bs) { bs = sc; dest = t; }
     }
     if (!dest) return;
-    const want = Math.min(40, Math.max(8, Math.round(big.pop * 0.02)));
+    // no more than the colony can house and feed for a while
+    const want = Math.min(40, Math.round(big.pop * 0.02), dest.housingCap - dest.pop + 4, Math.round(dest.pop * dest.foodDays / 20) + 4);
+    if (want < 4) return;
     let moved = 0;
     const list = big.residentsList;
     const start = randInt(Math.max(1, list.length));

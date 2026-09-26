@@ -28,7 +28,8 @@ const SERVICE = {
   culture: {
     seats: { monument: 50, amphitheater: 200, tavern: 70, arena: 300, opera_house: 420 },
     demand: (civ, town) => clamp(0.3 + (civ.beliefAvg[B.HEDONISM] + civ.beliefAvg[B.ART] + civ.beliefAvg[B.REVELRY]) / 300 + Math.max(0, 60 - town.happiness) / 60, 0.05, 1.3),
-    mult: (id, civ) => (id === 'monument' ? 0.6 + Math.max(0, civ.beliefAvg[B.PRIDE]) / 40 : id === 'tavern' ? 1 + Math.max(0, civ.beliefAvg[B.REVELRY]) / 40 : id === 'arena' ? 1 + Math.max(0, civ.beliefAvg[B.AGGRESSION]) / 50 : 1),
+    mult: (id, civ) => (id === 'monument' ? 0.6 + Math.max(0, civ.beliefAvg[B.PRIDE]) / 40 : id === 'tavern' ? 1 + Math.max(0, civ.beliefAvg[B.REVELRY]) / 40 : id === 'arena' ? 1 + Math.max(0, civ.beliefAvg[B.AGGRESSION]) / 50
+      : id === 'amphitheater' ? 1.1 + Math.max(0, civ.beliefAvg[B.ART]) / 40 : id === 'opera_house' ? 1.2 + Math.max(0, civ.beliefAvg[B.ART] + civ.beliefAvg[B.HIERARCHY]) / 60 : 1),
   },
   health: {
     seats: { herbalist_hut: 70, bathhouse: 180, hospital: 350 },
@@ -363,7 +364,7 @@ export class Planner {
         else if (def.id === 'road_guild') v += 2.5;
         else if (def.id === 'train_station') v += civ.towns.length > 1 ? 3 : 0;
         else if (def.id === 'motor_depot') v += civ.towns.length > 1 ? 1.8 : 0.3;
-        else if (def.id === 'airport') v += pop > 300 ? 1.8 : 0;
+        else if (def.id === 'airport') v += pop > 300 ? 2.2 + Math.min(2, pop / 1500) + (civ.towns.length > 1 ? 0.8 : 0) : 0;
         v /= 1 + n * 2;
         break;
       }

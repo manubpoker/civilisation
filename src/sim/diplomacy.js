@@ -140,7 +140,8 @@ export class Diplomacy {
       const expans = me.beliefAvg[B.EXPANSION];
       const truce = now < p.truceUntil;
       const bannedWar = me.bans.has('weapon_forge') && aggr < -40;
-      let warDrive = -r * 0.8 + aggr * 0.6 + expans * 0.3 + p.grudge * 0.8 - me.beliefAvg[B.EMPATHY] * 0.1 + (ratio - 1) * 30;
+      // a stronger army emboldens, but only so far
+      let warDrive = -r * 0.8 + aggr * 0.6 + expans * 0.3 + p.grudge * 0.8 - me.beliefAvg[B.EMPATHY] * 0.1 + Math.min(40, (ratio - 1) * 30);
       if (p.nonAggression) warDrive -= 25 + Math.max(0, honest) * 0.3;
       if (p.alliance) warDrive -= 60;
       if (me.warWeariness > 20) warDrive -= me.warWeariness;
@@ -209,7 +210,10 @@ export class Diplomacy {
   makePeace(me, them, p, ratio) {
     const sim = this.sim;
     p.war = false;
-    p.truceUntil = sim.tick + CFG.TICKS_PER_YEAR * 3;
+    p.truceUntil = sim.tick + CFG.TICKS_PER_YEAR * 5;
+    // a treaty resets the worst of the hatred; memories still linger
+    p.grudge *= 0.4;
+    for (const [c, o] of [[me, them], [them, me]]) c.relations[o.id] = Math.max(c.relations[o.id], -30);
     me.warWeariness *= 0.3; them.warWeariness *= 0.3;
     sim.military.disband(me.id, them.id);
     // tribute from the weaker side

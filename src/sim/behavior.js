@@ -16,7 +16,7 @@ const P_LABORER = PROF_INDEX.laborer;
 const P_THIEF = PROF_INDEX.thief;
 const RES_WOOD = R('wood'), RES_STONE = R('stone'), RES_TOOLS = R('tools'), RES_COINS = R('coins');
 const RES_MEAT = R('meat'), RES_HIDES = R('hides'), RES_IRON = R('iron'), RES_BERRIES = R('berries');
-const RES_MEDICINE = R('medicine');
+const RES_MEDICINE = R('medicine'), RES_MARBLE = R('marble');
 
 // deposit -> resource index
 const DEP_RES = DEPOSITS.map((d) => (d.res ? R(d.res) : -1));
@@ -189,7 +189,9 @@ function elderThink(sim, i, town) {
   if (chance(0.3)) {
     sim.spatial.query(P.x[i], P.y[i], 10, (j) => {
       if (P.civ[j] === P.civ[i] && P.age[j] < CFG.ADULT_AGE + 4) {
-        P.pushB(j, B.TRADITION, 0.4); P.pushB(j, B.ANCESTRY, 0.4);
+        // the elder's own outlook is passed on (a mild pull toward the old ways)
+        P.pushB(j, B.TRADITION, (P.b(i, B.TRADITION) - P.b(j, B.TRADITION)) * 0.06 + 0.1);
+        P.pushB(j, B.ANCESTRY, (P.b(i, B.ANCESTRY) - P.b(j, B.ANCESTRY)) * 0.06 + 0.1);
         for (let k = 0; k < 2; k++) { const s = randInt(NB); P.pushB(j, s, (P.b(i, s) - P.b(j, s)) * 0.05); }
       }
       return false;
@@ -492,6 +494,8 @@ function finishHarvest(sim, i) {
   }
   // occasional wild honey
   if (d === D.BERRY && chance(0.03) && town) town.add(R('honey'), 1);
+  // skilled quarriers cut fine dimension stone ("marble") from good beds
+  if (d === D.STONE && wb && wb.def.id === 'quarry' && civ.has('construction') && chance(0.12 + P.skill[i] * 0.001)) { P.carryRes[i] = RES_MARBLE; P.carryAmt[i] = Math.max(1, P.carryAmt[i] >> 1); }
   // deliver
   let drop = wb && wb.def.dropoff && (wb.def.dropoff === true || wb.def.dropoff.includes(RESOURCES[r].id)) ? wb : null;
   if (!drop && town) drop = findDropoff(sim, town, P.x[i], P.y[i], r);
