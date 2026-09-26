@@ -102,5 +102,12 @@ export class People {
     const v = this.beliefs[k] + fl + (rand() < dv - fl ? 1 : 0);
     this.beliefs[k] = v > 100 ? 100 : v < -100 ? -100 : v;
   }
+  // Persuasion: pressure against a held conviction meets resistance, so
+  // people (and whole peoples) keep their distinct outlooks.
+  persuade(i, scale, dv) {
+    const cur = this.beliefs[i * NB + scale];
+    if (cur * dv < 0) dv /= 1 + Math.abs(cur) / 30;
+    this.pushB(i, scale, dv);
+  }
   isAdult(i) { return this.age[i] >= CFG.ADULT_AGE; }
 }

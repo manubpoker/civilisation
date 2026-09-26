@@ -45,7 +45,7 @@ export class Jobs {
       case 'harvest': case 'field': case 'hunt': {
         const outs = outputsOf(def);
         let isFood = false, need = 0;
-        for (const r of outs) { if (RESOURCES[r].food > 0) isFood = true; need = Math.max(need, deficit(town, r)); }
+        for (const r of outs) { if (RESOURCES[r].food >= 0.6) isFood = true; need = Math.max(need, deficit(town, r)); }
         pr = isFood ? 1.5 + foodNeed + need * 2 : 1.4 + need * 3;
         if (def.id === 'gatherer_camp' && civ.has('agriculture')) pr *= 0.6;
         if (def.id === 'farm') pr *= 1.3;

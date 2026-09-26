@@ -38,7 +38,7 @@ export class BeliefSystem {
       sim.spatial.query(b.cx, b.cy, aura.radius, (j) => {
         if (P.civ[j] !== b.civ) return false;
         if (chance(0.5)) return false;
-        for (const [k, v] of entries) P.pushB(j, B[k.toUpperCase()], v * 3 * staff);
+        for (const [k, v] of entries) P.persuade(j, B[k.toUpperCase()], v * 3 * staff);
         return ++cnt > 120;
       });
     }
@@ -94,7 +94,7 @@ export class BeliefSystem {
       if (P.civ[j] !== civ.id) return false;
       for (let k = 0; k < 2; k++) {
         const s = randInt(NB);
-        if (civ.adopted[s]) P.pushB(j, s, civ.adopted[s] * 1.2);
+        if (civ.adopted[s]) P.persuade(j, s, civ.adopted[s] * 1.2);
       }
       return ++n > count;
     });
@@ -137,6 +137,22 @@ export class BeliefSystem {
       if (civ.computeGovernment()) sim.chronicle(`${civ.name} becomes a ${civ.government}.`, civ.id, 'government');
       // prophets arise now and then
       if (chance(1 / (CFG.DAYS_PER_YEAR * 6))) this.spawnProphet(civ);
+    }
+    // wartime identity: peoples at war define themselves against the enemy's creed
+    if (sim.day % 3 === 0) {
+      for (const civ of sim.civs) {
+        if (!civ.alive) continue;
+        for (const foe of sim.civs) {
+          if (foe === civ || !foe.alive || !sim.military.atWarBetween(civ.id, foe.id)) continue;
+          const scales = [];
+          for (let s = 0; s < NB; s++) if (foe.adopted[s] && foe.adopted[s] !== civ.adopted[s]) scales.push(s);
+          if (!scales.length) continue;
+          for (let k = 0; k < 2; k++) {
+            const s = scales[randInt(scales.length)];
+            this.shock(civ.id, s, -foe.adopted[s] * 2, 0.08);
+          }
+        }
+      }
     }
   }
 

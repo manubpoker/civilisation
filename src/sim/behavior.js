@@ -879,7 +879,7 @@ export function arrive(sim, i) {
       let n = 0;
       sim.spatial.query(P.x[i], P.y[i], 10, (j) => {
         if (j === i || P.civ[j] !== P.civ[i]) return false;
-        for (const [k, v] of Object.entries(prof.inf)) P.pushB(j, B[k.toUpperCase()], v * 3);
+        for (const [k, v] of Object.entries(prof.inf)) P.persuade(j, B[k.toUpperCase()], v * 3);
         if (prof.fx.faith) P.faithSat[j] = Math.min(100, P.faithSat[j] + 30);
         n++;
         return n > 12;

@@ -121,12 +121,24 @@ export const PROFESSIONS = [
   P('thief', 'Thief', 'thief', 'general', { tech: null, color: [80, 70, 90], aff: { empathy: -0.6, law: -0.6, honesty: -0.6 }, mil: { atk: 3, def: 1, hp: 0, range: 1.5, rate: 30, speed: 1.15 }, desc: 'Steals from stockpiles. Emerges among the poor, selfish and lawless.' }),
 ];
 
+// Everyday work shapes outlooks in both directions.
+const COUNTER_INF = {
+  miner: { nature: -0.1 }, woodcutter: { nature: -0.05 }, hunter: { animals: -0.1 }, herder: { animals: -0.05 },
+  factory_worker: { nature: -0.05, tradition: -0.05 }, steelworker: { nature: -0.05 }, technician: { invention: 0.1 },
+  scientist: { piety: -0.1 }, professor: { tradition: -0.05 }, programmer: { invention: 0.1, ancestry: -0.05 },
+  trader: { patriotism: -0.05 }, merchant: { ambition: 0.05 }, banker: { property: -0.1, commerce: 0.1 },
+  spy: { honesty: -0.1, suspicion: 0.1 }, thief: { honesty: -0.1 }, innkeeper: { revelry: 0.1, hedonism: 0.05 },
+  sailor: { sea: 0.1, adventure: 0.05 }, scout: { adventure: 0.1, curiosity: 0.05 }, doctor: { mortality: -0.1 },
+  general: { aggression: 0.1, discipline: 0.05 }, diplomat: { xenophilia: 0.1 }, propagandist: { patriotism: 0.15, authority: 0.1 },
+  politician: { ambition: 0.1 }, broker: { ambition: 0.1, charity: -0.05 }, actor: { hedonism: 0.05 },
+};
+
 export const PROF_INDEX = {};
 PROFESSIONS.forEach((p, i) => {
   PROF_INDEX[p.id] = i; p.idx = i;
   p.fx = p.fx || {};
   p.aff = p.aff || {};
-  p.inf = p.inf || {};
+  p.inf = Object.assign({}, p.inf || {}, COUNTER_INF[p.id] || {});
 });
 export function PR(id) {
   const i = PROF_INDEX[id];

@@ -102,7 +102,7 @@ export class Lifecycle {
     // --- mortality
     const eff = age - civ.mod.lifespan;
     let hz = 0.0005 * Math.exp(0.085 * eff);
-    if (age < 2) hz += 0.06 / Math.max(0.5, civ.mod.health);
+    if (age < 2) hz += 0.04 / Math.max(0.5, civ.mod.health);
     if (P.health[i] < 30) hz += 0.2;
     if (chance(hz / CFG.DAYS_PER_YEAR)) { sim.kill(i, age > 55 ? 'old age' : 'illness'); return; }
 
@@ -131,7 +131,7 @@ export class Lifecycle {
         const kids = P.flags[i] >> 5; // small counter stored in high bits
         const housing = town.housingCap > town.pop ? 1 : 0.35;
         const fam = 1 + P.b(i, B.FAMILY) * 0.007;
-        const p = 0.024 * civ.mod.birth * fam * town.feedRatio * housing * (0.5 + P.happy[i] / 100) / (1 + kids * 0.35);
+        const p = 0.03 * civ.mod.birth * fam * town.feedRatio * housing * (0.5 + P.happy[i] / 100) / (1 + kids * 0.35);
         if (chance(p)) P.preg[i] = 9;
       }
     }

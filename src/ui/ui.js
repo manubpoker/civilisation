@@ -498,8 +498,10 @@ export class UI {
       const zero = st < 0.5 && prod[r.idx] < 0.05;
       return `<tr class="${zero ? 'zero' : ''}"><td><span style="display:inline-block;width:8px;height:8px;background:${r.color};margin-right:6px;border-radius:1px"></span>${esc(r.name)}</td><td class="n">${fmt(st)}</td><td class="n">${fmt(prod[r.idx])}</td><td class="n">${fmt(cons[r.idx])}</td><td class="n">${sim.economy.price(c.id, r.idx).toFixed(1)}</td></tr>`;
     }).join('');
-    const towns = c.towns.map((tid) => sim.towns[tid]).filter(Boolean).map((t) => `<tr><td><button class="link" data-town="${t.id}">${t.isCapital ? '★ ' : ''}${esc(t.name)}</button></td><td class="n">${t.pop}</td><td class="n">${t.housingCap}</td><td class="n">${t.foodDays.toFixed(0)}d</td><td class="n">${Math.round(t.happiness)}</td></tr>`).join('');
-    const table = `<h3>Towns</h3><table class="data"><thead><tr><th>Town</th><th class="n">People</th><th class="n">Homes</th><th class="n">Food</th><th class="n">Mood</th></tr></thead><tbody>${towns}</tbody></table>
+    const shortage = (t) => RESOURCES.map((r) => [r, t.want[r.idx] > 0 ? (t.want[r.idx] - t.stock[r.idx]) / t.want[r.idx] * Math.log2(2 + r.base) : 0])
+      .filter((x) => x[1] > 0.6 && !x[0].food).sort((a, b) => b[1] - a[1]).slice(0, 2).map((x) => x[0].name).join(', ');
+    const towns = c.towns.map((tid) => sim.towns[tid]).filter(Boolean).map((t) => `<tr><td><button class="link" data-town="${t.id}">${t.isCapital ? '★ ' : ''}${esc(t.name)}</button></td><td class="n">${t.pop}</td><td class="n">${t.housingCap}</td><td class="n">${t.foodDays.toFixed(0)}d</td><td class="n">${Math.round(t.happiness)}</td><td class="muted" style="font-size:11px">${esc(shortage(t))}</td></tr>`).join('');
+    const table = `<h3>Towns</h3><table class="data"><thead><tr><th>Town</th><th class="n">People</th><th class="n">Homes</th><th class="n">Food</th><th class="n">Mood</th><th>Short of</th></tr></thead><tbody>${towns}</tbody></table>
       <h3>Stockpiles</h3><table class="data"><thead><tr><th>Resource</th><th class="n">Stock</th><th class="n">Made/d</th><th class="n">Used/d</th><th class="n">Price</th></tr></thead><tbody>${rows}</tbody></table>`;
     if (inner) return table;
     return this.tools(`<select id="econCiv" aria-label="Civilisation">${sim.civs.map((x) => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`) + `<div id="tabcontent">${table}</div>`;

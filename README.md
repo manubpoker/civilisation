@@ -37,7 +37,9 @@ Append `#1234` to the URL to pick a different world seed.
 
 ## Spectator controls
 
-Drag or WASD to pan · wheel/pinch to zoom in pixel-exact steps · click a pixel to inspect a person or building · **F** follow · **Space** pause · **1–8** speed · **T** territory · **N** night · **L** labels · **G** technology tree · **H** guide.
+Drag or WASD to pan · wheel/pinch to zoom in pixel-exact steps · click a pixel to inspect a person or building · **F** follow · **Space** pause · **1–8** speed (½× to MAX; the almanac shows simulated years per second) · **T** territory · **N** night · **L** labels · **G** technology tree · **V** Director mode (the camera chases wars, disasters and discoveries, or follows a random citizen) · **H** guide (with a *new continent* button).
+
+The dossier on the right has tabs for the chronicle, all 100 technologies, the 50 belief scales with each civilisation's average, workforce by profession, structures (including what is outlawed), stockpiles and prices, diplomacy and military, and census charts. Clicking any name opens an encyclopedia entry.
 
 ## Code layout
 

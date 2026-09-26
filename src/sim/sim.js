@@ -999,11 +999,28 @@ export class Sim {
     this.transport.daily();
     this.events.daily();
     this.animals.daily(this);
+    this.abandonExhausted();
     this.regrow();
     this.computeTerritory();
     this.computeAuras();
     this.nav.refresh(false);
     if (this.day % CFG.DAYS_PER_YEAR === 0) this.yearly();
+  }
+
+  // Pits, quarries and mines whose deposits are worked out are abandoned so
+  // the planner can open new ones elsewhere.
+  abandonExhausted() {
+    for (const b of this.buildings) {
+      if (!b || !b.built || !b.def.harvest || !b.def.harvest.dep) continue;
+      const ex = b.exhausted || 0;
+      b.exhausted = ex * 0.5;
+      if (ex < 20) continue;
+      b.harvestCache = null;
+      if (this.pickHarvestPixel(b, b.cx, b.cy) >= 0) continue;
+      const town = this.towns[b.town];
+      if (b.def.harvest.mine || b.def.id === 'quarry') this.chronicle(`The ${b.def.name.toLowerCase()} of ${town ? town.name : 'the frontier'} is worked out and abandoned.`, b.civ, 'info');
+      this.destroyBuilding(b, 'exhausted');
+    }
   }
 
   yearly() {

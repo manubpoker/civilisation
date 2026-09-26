@@ -13,7 +13,8 @@ const t0 = Date.now();
 const sim = new Sim(seed);
 console.log(`setup ${Date.now() - t0}ms; people=${sim.people.count}`);
 let lastLog = 0;
-sim.onChronicle = (e) => { if (process.env.QUIET) return; console.log(`  [Y${e.year}] ${e.text}`); };
+const kinds = {};
+sim.onChronicle = (e) => { kinds[e.kind] = (kinds[e.kind] || 0) + 1; if (process.env.QUIET) return; console.log(`  [Y${e.year}] ${e.text}`); };
 const endTick = years * CFG.TICKS_PER_YEAR;
 let steps = 0;
 const t1 = Date.now();
@@ -50,4 +51,5 @@ for (const c of sim.civs) { STRUCTURES.forEach((s, k) => { if (c.structCount[k] 
 console.log(`\nstructures seen ${everS.size}/100; missing: ${STRUCTURES.filter((s) => !everS.has(s.id)).map((s) => s.id).join(' ')}`);
 console.log(`professions seen ${everP.size}/100; missing: ${PROFESSIONS.filter((p) => !everP.has(p.id)).map((p) => p.id).join(' ')}`);
 console.log('ships', sim.transport.ships.length, 'trains', sim.transport.trains.length, 'rail lines', sim.transport.lines.length, 'planes', sim.transport.planes.length, 'armies', sim.military.armies.length);
+console.log('chronicle kinds', JSON.stringify(kinds));
 if (process.env.CHRON) for (const e of sim.chronicleLog.slice(-120)) console.log(`  [Y${e.year}] ${e.text}`);

@@ -127,6 +127,14 @@ export class Economy {
         for (const [k, n] of Object.entries(PROFESSIONS[pid].equip || {})) W[R(k)] = Math.max(W[R(k)], n * 8);
       }
     }
+    // motor fuel for trucks and aircraft
+    if (civ.has('automobile') || civ.has('flight')) W[R('fuel')] = Math.max(W[R('fuel')], 15 + pop * 0.03);
+    // railway iron for lines under construction
+    for (const line of sim.transport.lines) {
+      if (line.active || line.civ !== civ.id || (line.a !== town.id && line.b !== town.id)) continue;
+      W[R('iron')] = Math.max(W[R('iron')], 40);
+      break;
+    }
     // power fuel
     if (town.powerDemand > 0) { W[R('coal')] = Math.max(W[R('coal')], 30); W[R('uranium')] = Math.max(W[R('uranium')], 2); }
     // propagate demand up production chains (e.g. tools -> bronze -> copper & tin ore)

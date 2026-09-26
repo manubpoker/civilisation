@@ -62,8 +62,10 @@ export class Planner {
     const civ = sim.civs[town.civ];
     if (!town.alive) return;
     const builders = this.countBuilders(town);
-    const maxC = Math.min(7, 1 + Math.floor(builders / 3) + (town.pop > 150 ? 1 : 0) + (town.pop > 400 ? 1 : 0));
+    const maxC = Math.min(16, 1 + Math.floor(builders / 3) + Math.floor(town.pop / 150));
     if (town.construction.length >= maxC) return;
+    // bigger towns and idle hands lay out several projects per planning round
+    let budget = Math.min(4, 1 + Math.floor(town.pop / 400) + (town.idle > 30 ? 1 : 0), maxC - town.construction.length);
     const weights = this.aiWeights(civ);
     const cands = [];
     const counts = this.countTypes(town);
@@ -85,30 +87,40 @@ export class Planner {
       cands.push({ def, v });
     }
     cands.sort((a, b) => b.v - a.v);
-    const planWants = new Map();
-    let tries = 0;
-    let placed = false;
-    for (const c of cands.slice(0, 10)) {
+    // remembered material needs decay slowly so supply chains get time to react
+    const planWants = town.planWants || new Map();
+    for (const [r, n] of planWants) { if (n * 0.85 < 4) planWants.delete(r); else planWants.set(r, n * 0.85); }
+    const blockers = new Float32Array(NRES);
+    let placed = 0, siteTries = 0;
+    const chosen = new Set();
+    for (const c of cands) {
       const def = c.def;
       if (!town.has(def.cost)) {
-        // remember what we need so producers/logistics react
+        // remember what we need so producers/logistics react; the materials
+        // blocking the most valuable projects become bottlenecks to fix
         for (const [k, n] of Object.entries(def.cost)) {
           const r = R(k);
+          if (town.stock[r] >= n) continue;
           planWants.set(r, Math.max(planWants.get(r) || 0, n * 1.2));
+          blockers[r] += Math.min(3, c.v) / 3;
         }
-        if (c.v > 3 && tries === 0) { tries++; continue; }
         continue;
       }
+      if (placed >= budget || chosen.has(def.idx) || siteTries >= 6) continue;
+      siteTries++;
       const site = this.findSite(def, town, civ);
       if (!site) { this.fails[def.id] = (this.fails[def.id] || 0) + 1; continue; }
       town.pay(def.cost);
       const b = placeBuilding(sim, def.idx, civ.id, town.id, site.x, site.y, false, !!site.rotate);
       if (def.id === 'palisade' || def.id === 'stone_wall') b.wallRing = true;
       this.lastChoice.set(town.id, def.id);
-      placed = true;
-      break;
+      chosen.add(def.idx);
+      placed++;
+      // one centre / unique project at a time
+      if (def.center || def.unique) budget = placed;
     }
     town.planWants = planWants;
+    town.blockers = blockers;
     if (!placed && town.construction.length === 0 && chance(0.25)) this.renewal(town, civ);
   }
 
@@ -233,7 +245,7 @@ export class Planner {
       // don't add workplaces while the existing ones of this type are unstaffed
       if (this.openSlots(town, def.idx) > 0) return 0;
       if (n > 0 && def.recipes && this.anyStalled(town, def.idx)) return 0;
-      const feeds = outs.some((r) => RESOURCES[r].food > 0.5);
+      const feeds = outs.some((r) => RESOURCES[r].food >= 0.6);
       // only refuse new workplaces under a genuine labour shortage
       if (town.idle < 2 && town.openJobs > Math.max(8, town.adults * 0.12) && !(feeds && town.foodDays < 12)) return 0;
     }
@@ -244,14 +256,15 @@ export class Planner {
         const want = town.want[r];
         const stock = town.stock[r];
         let need = want > 0 ? Math.max(0, (want - stock) / want) : 0;
-        if (res.food > 0) {
+        if (res.food >= 0.6) {
           const fd = town.foodDays;
           need = Math.max(need, fd < 5 ? 3 : fd < 10 ? 1.8 : fd < 20 ? 0.9 : fd < 40 ? 0.3 : 0.05);
           // make sure production keeps up with population
           const prodRatio = (town.prod[r] + 1) / (pop * 0.5);
           if (prodRatio < 1) need += 0.3;
         }
-        // inputs must be obtainable for recipes
+        // materials holding up planned construction are bottlenecks
+        if (town.blockers && town.blockers[r] > 0 && stock < want) need += Math.min(2.5, town.blockers[r] * 0.6);
         best = Math.max(best, need * (0.8 + Math.log2(1 + res.base) * 0.5));
       }
       if (def.recipes) {
@@ -274,7 +287,14 @@ export class Planner {
       }
       if (def.harvest && def.harvest.animals && sim.animals.count < 60) best *= 0.3;
       v += best * 2.2;
-      v /= 1 + n * 0.35;
+      // idle hands: new workplaces for anything in demand
+      const jobless = town.idle / Math.max(1, town.adults);
+      if (def.jobCount && best > 0.1 && jobless > 0.12 && town.idle > 12) v += Math.min(2.5, jobless * 6);
+      const staple = outs.some((r) => RESOURCES[r].food >= 0.6);
+      const critical = outs.some((r) => town.blockers && town.blockers[r] > 1 && town.stock[r] < town.want[r] * 0.25);
+      // more farms are always welcome in a famine, more quarries when stone
+      // blocks everything; otherwise diminishing returns
+      v /= 1 + n * ((staple && town.foodDays < 10) || critical ? 0.05 : 0.35);
       if (def.id === 'gatherer_camp' && n >= 2) v *= 0.4;
       if (def.id === 'farm') v *= 1.2;
       if (def.id === 'strip_mine') v *= 0.6 + Math.max(0, -civ.beliefAvg[B.NATURE]) / 50;

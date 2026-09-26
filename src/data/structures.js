@@ -367,6 +367,45 @@ export const STRUCTURES = [
     style: { kind: 'spaceport', wall: '#e8e8f0', roof: '#d04020' }, desc: 'Launches colony ships to the stars — the culmination of civilisation.' }),
 ];
 
+// Counter-currents: institutions that pull people toward the opposite poles,
+// so no outlook sweeps every people by default.
+const COUNTER_AURAS = {
+  tavern: { zeal: -0.02, piety: -0.01 },
+  marketplace: { tradition: -0.01, hospitality: 0.01 },
+  trading_post: { xenophilia: 0.02, patriotism: -0.01 },
+  embassy: { xenophilia: 0.02, suspicion: -0.01 },
+  spy_den: { honesty: -0.02, suspicion: 0.02 },
+  university: { tradition: -0.02, piety: -0.01 },
+  laboratory: { piety: -0.02, tradition: -0.02 },
+  research_institute: { ancestry: -0.02 },
+  observatory: { theism: -0.01, spirituality: -0.01 },
+  factory: { tradition: -0.02, collectivism: 0.01 },
+  steel_mill: { nature: -0.02, ambition: 0.01 },
+  mine: { nature: -0.01 },
+  lumber_camp: { nature: -0.01 },
+  hunting_lodge: { animals: -0.02 },
+  pasture: { animals: -0.01 },
+  printing_house: { tradition: -0.01 },
+  bank: { property: -0.02, ambition: 0.01 },
+  stock_exchange: { ambition: 0.02 },
+  amphitheater: { stoicism: -0.02 },
+  arena: { mercy: -0.02 },
+  courthouse: { forgiveness: -0.01 },
+  dock: { sea: 0.03, adventure: 0.01 },
+  shipyard: { sea: 0.02 },
+  airport: { xenophilia: 0.02, mobility: 0.02 },
+  electronics_plant: { invention: 0.02, ancestry: -0.01 },
+  propaganda_office: { patriotism: 0.04, authority: 0.03 },
+  barracks: { patriotism: 0.01 },
+  hospital: { mortality: -0.02 },
+};
+for (const s of STRUCTURES) {
+  const add = COUNTER_AURAS[s.id];
+  if (!add) continue;
+  s.aura = s.aura || { radius: 24 };
+  s.aura.beliefs = Object.assign({}, s.aura.beliefs || {}, add);
+}
+
 export const STRUCT_INDEX = {};
 STRUCTURES.forEach((s, i) => {
   STRUCT_INDEX[s.id] = i; s.idx = i;

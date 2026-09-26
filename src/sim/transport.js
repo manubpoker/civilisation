@@ -459,7 +459,11 @@ export class Transport {
           }
           if (!dests.length) continue;
           const d = dests[randInt(dests.length)];
+          const home = sim.towns[a.town];
+          if (!home || home.take(R('fuel'), 2) < 1) continue;
           this.planes.push({ civ: civ.id, x: a.cx, y: a.cy, tx: d.cx, ty: d.cy, sx: a.cx, sy: a.cy });
+          // foreign flights carry travellers and business
+          if (d.civ !== civ.id) sim.diplomacy.pair(civ.id, d.civ).tradeToday += 20;
         }
       }
     }

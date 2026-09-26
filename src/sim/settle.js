@@ -21,7 +21,9 @@ export class Settle {
     for (const civ of sim.civs) {
       if (!civ.alive) continue;
       if (this.parties.some((p) => p.civ === civ.id)) continue;
-      if (civ.pop < 240) continue;
+      // expand when large, or earlier if the home town has run out of room
+      const crowded = civ.towns.some((tid) => { const t = sim.towns[tid]; return t && t.pop >= 150 && t.pop >= t.housingCap * 0.95; });
+      if (civ.pop < 240 && !(civ.pop >= 170 && crowded)) continue;
       const maxTowns = 1 + Math.floor(civ.pop / 320) + Math.round(Math.max(0, civ.beliefAvg[B.EXPANSION]) / 30);
       if (civ.towns.length >= Math.min(12, maxTowns)) continue;
       // source: the most crowded town with enough people
