@@ -368,7 +368,7 @@ export class World {
     ore(D.COPPER, 18, 3, 7, rocky, 150);
     ore(D.TIN, 12, 2.5, 5, rocky, 140);
     ore(D.IRON, 18, 3, 7, rocky, 160);
-    ore(D.COAL, 16, 4, 8, (t) => rocky(t) || t === T.FOREST || t === T.TAIGA, 170);
+    ore(D.COAL, 26, 4, 8, (t) => rocky(t) || t === T.FOREST || t === T.TAIGA, 220);
     ore(D.GOLD, 8, 2, 4, rocky, 120);
     ore(D.SILVER, 8, 2, 4, rocky, 120);
     ore(D.GEMS, 7, 1.5, 3.5, (t) => t === T.MOUNTAIN, 100);

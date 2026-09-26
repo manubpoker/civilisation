@@ -137,7 +137,7 @@ export const STRUCTURES = [
       { in: { iron_ore: 2, coal: 1 }, out: { iron: 2 }, time: 110, tech: 'iron_working' }],
     fx: { pollution: 1 }, style: { kind: 'furnace', wall: '#6a5a4a', roof: '#c04a2a' }, desc: 'Smelts copper and tin into bronze, and iron ore into iron.' }),
   st({ id: 'charcoal_kiln', name: 'Charcoal Kiln', cat: 'material', tech: 'iron_working', size: [3, 3], cost: { stone: 10 }, work: 250, hp: 200,
-    jobs: { charcoal_burner: 1 }, recipes: [{ in: { wood: 3 }, out: { coal: 1 }, time: 90 }, { in: { wood: 5 }, out: { fuel: 1 }, time: 150, tech: 'combustion' }], fx: { pollution: 1 },
+    jobs: { charcoal_burner: 2 }, recipes: [{ in: { wood: 2 }, out: { coal: 1 }, time: 80 }, { in: { wood: 5 }, out: { fuel: 1 }, time: 150, tech: 'combustion' }], fx: { pollution: 1 },
     style: { kind: 'kiln', wall: '#3a3a3a', roof: '#6a4a2a' }, desc: 'Slowly burns wood into charcoal; in the motor age also distils wood spirit for engines.' }),
   st({ id: 'glassworks', name: 'Glassworks', cat: 'material', tech: 'engineering', size: [4, 4], cost: { stone: 30, bricks: 10 }, work: 700, hp: 500,
     jobs: { glassblower: 2 }, recipes: [{ in: { stone: 2, coal: 1 }, out: { glass: 2 }, time: 100 }],
