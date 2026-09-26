@@ -486,6 +486,7 @@ export class Transport {
           const home = sim.towns[a.town];
           if (!home || home.take(R('fuel'), 2) < 1) continue;
           this.planes.push({ civ: civ.id, x: a.cx, y: a.cy, tx: d.cx, ty: d.cy, sx: a.cx, sy: a.cy });
+          this.flights = (this.flights || 0) + 1;
           // foreign flights carry travellers and business
           if (d.civ !== civ.id) sim.diplomacy.pair(civ.id, d.civ).tradeToday += 20;
         }
