@@ -1,0 +1,13 @@
+{
+  "name": "civilisation",
+  "version": "1.0.0",
+  "description": "A pixel-perfect self-building civilisation simulation: every pixel is a person.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "npx --yes http-server -c-1 -p 8080 .",
+    "build": "node build.mjs",
+    "test": "node test/validate-data.mjs && node test/headless.mjs"
+  },
+  "devDependencies": {}
+}
