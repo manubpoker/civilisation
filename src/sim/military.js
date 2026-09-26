@@ -237,7 +237,13 @@ export class Military {
         target.siege = sim.tick;
         // occupation: many attackers at the centre and few defenders
         let def = 0;
-        sim.spatial.query(a.tx, a.ty, 30, (j) => { if (P.civ[j] === target.civ && PROFESSIONS[P.prof[j]].mil) def++; return false; });
+        // defenders: soldiers, watchmen and guards, and anyone who has taken up arms
+        sim.spatial.query(a.tx, a.ty, 30, (j) => {
+          if (P.civ[j] !== target.civ) return false;
+          const k = PROFESSIONS[P.prof[j]].kind;
+          if (k === 'military' || k === 'watchman' || k === 'guard' || P.state[j] === S.FIGHT) def++;
+          return false;
+        });
         let att = 0;
         sim.spatial.query(a.tx, a.ty, 22, (j) => { if (P.civ[j] === a.civ && P.army[j] === a.id) att++; return false; });
         if (att >= 5 && def === 0) { a.occupy = (a.occupy || 0) + 1; if (a.occupy > 6) this.captureTown(target, a.civ); }
@@ -264,12 +270,14 @@ export class Military {
       const R0 = combatant ? (p.mil.cav ? 34 : 26) : 12;
       let best = -1, bd = 1e9;
       const honorable = sim.civs[c].beliefAvg[B.HONOR] > 20;
+      // only the ruthless cut down people who have not taken up arms
+      const ruthless = sim.civs[c].beliefAvg[B.MERCY] < -30 && !honorable;
       sim.spatial.query(P.x[i], P.y[i], R0, (j) => {
         const cj = P.civ[j];
         if (cj < 0 || cj === c || !this.atWarBetween(c, cj) || P.state[j] === S.INSIDE) return false;
         const pj = PROFESSIONS[P.prof[j]];
-        const jCombat = !!pj.mil;
-        if (!jCombat && (honorable || !combatant)) return false;
+        const jCombat = !!pj.mil && pj.kind !== 'hunter' && pj.kind !== 'thief' || P.state[j] === S.FIGHT;
+        if (!jCombat && (!ruthless || !combatant)) return false;
         const d = (P.x[j] - P.x[i]) ** 2 + (P.y[j] - P.y[i]) ** 2 - (jCombat ? 200 : 0);
         if (d < bd) { bd = d; best = j; }
         return false;
