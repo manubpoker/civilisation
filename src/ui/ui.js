@@ -82,13 +82,13 @@ export class UI {
   }
 
   bind() {
-    const r = this.r;
+    // read the renderer at event time: it is attached after the UI is built
     $('#speeds').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) this.ctl.setSpeed(+b.dataset.speed); });
-    $('#colorMode').addEventListener('change', (e) => { r.colorMode = e.target.value; $('#beliefScale').hidden = r.colorMode !== 'belief'; this.clearColors(); this.legend(); });
-    $('#beliefScale').addEventListener('change', (e) => { r.beliefScale = +e.target.value; this.legend(); });
-    $('#overlay').addEventListener('change', (e) => { r.overlay = e.target.value; });
-    $('#btnNight').addEventListener('click', (e) => { r.night = !r.night; e.target.setAttribute('aria-pressed', r.night); });
-    $('#btnLabels').addEventListener('click', (e) => { r.showLabels = !r.showLabels; e.target.setAttribute('aria-pressed', r.showLabels); });
+    $('#colorMode').addEventListener('change', (e) => { this.r.colorMode = e.target.value; $('#beliefScale').hidden = this.r.colorMode !== 'belief'; this.clearColors(); this.legend(); });
+    $('#beliefScale').addEventListener('change', (e) => { this.r.beliefScale = +e.target.value; this.legend(); });
+    $('#overlay').addEventListener('change', (e) => { this.r.overlay = e.target.value; });
+    $('#btnNight').addEventListener('click', (e) => { this.r.night = !this.r.night; e.target.setAttribute('aria-pressed', this.r.night); });
+    $('#btnLabels').addEventListener('click', (e) => { this.r.showLabels = !this.r.showLabels; e.target.setAttribute('aria-pressed', this.r.showLabels); });
     $('#btnHelp').addEventListener('click', () => this.showHelp());
     $('#btnDirector').addEventListener('click', () => this.toggleDirector());
     $('#mbCivs').addEventListener('click', () => { $('#ledger').classList.toggle('open'); $('#dossier').classList.remove('open'); });
@@ -123,7 +123,7 @@ export class UI {
     const mmMove = (e) => {
       const rect = mm.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width * this.sim.world.W, y = (e.clientY - rect.top) / rect.height * this.sim.world.H;
-      r.cam.x = x; r.cam.y = y; this.follow = false;
+      this.r.cam.x = x; this.r.cam.y = y; this.follow = false;
     };
     let mmDown = false;
     mm.addEventListener('pointerdown', (e) => { mmDown = true; mmMove(e); mm.setPointerCapture(e.pointerId); });
@@ -146,14 +146,14 @@ export class UI {
       if (pinch && pointers.size === 2) {
         const p = [...pointers.values()];
         const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
-        if (d > pinch.d * 1.35) { r.zoomAt((p[0].x + p[1].x) / 2 - rect.left, (p[0].y + p[1].y) / 2 - rect.top, 1); pinch.d = d; }
-        else if (d < pinch.d / 1.35) { r.zoomAt((p[0].x + p[1].x) / 2 - rect.left, (p[0].y + p[1].y) / 2 - rect.top, -1); pinch.d = d; }
+        if (d > pinch.d * 1.35) { this.r.zoomAt((p[0].x + p[1].x) / 2 - rect.left, (p[0].y + p[1].y) / 2 - rect.top, 1); pinch.d = d; }
+        else if (d < pinch.d / 1.35) { this.r.zoomAt((p[0].x + p[1].x) / 2 - rect.left, (p[0].y + p[1].y) / 2 - rect.top, -1); pinch.d = d; }
         return;
       }
       if (drag) {
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         drag.moved += Math.abs(dx) + Math.abs(dy);
-        if (drag.moved > 4) { r.pan(dx, dy); cv.classList.add('dragging'); this.follow = false; }
+        if (drag.moved > 4) { this.r.pan(dx, dy); cv.classList.add('dragging'); this.follow = false; }
         drag.x = e.clientX; drag.y = e.clientY;
         $('#tooltip').hidden = true;
       } else if (e.pointerType === 'mouse') this.hover(sx, sy, e.clientX, e.clientY);
@@ -173,7 +173,7 @@ export class UI {
       e.preventDefault();
       const rect = cv.getBoundingClientRect();
       this.wheelAcc = (this.wheelAcc || 0) + e.deltaY;
-      if (Math.abs(this.wheelAcc) > 40) { r.zoomAt(e.clientX - rect.left, e.clientY - rect.top, this.wheelAcc < 0 ? 1 : -1); this.wheelAcc = 0; }
+      if (Math.abs(this.wheelAcc) > 40) { this.r.zoomAt(e.clientX - rect.left, e.clientY - rect.top, this.wheelAcc < 0 ? 1 : -1); this.wheelAcc = 0; }
     }, { passive: false });
     this._onKey = (e) => this.onKey(e);
     this._onKeyUp = (e) => { this.keys && this.keys.delete(e.key.toLowerCase()); };

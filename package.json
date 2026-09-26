@@ -8,7 +8,8 @@
     "dev": "npx --yes http-server -c-1 -p 8080 .",
     "build": "node build.mjs",
     "test": "node test/validate-data.mjs && node test/smoke.mjs",
-    "sim": "node test/headless.mjs"
+    "sim": "node test/headless.mjs",
+    "test:input": "node build.mjs && node test/input-test.mjs"
   },
   "devDependencies": {}
 }
